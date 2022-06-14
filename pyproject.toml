@@ -9,7 +9,7 @@ authors = [
     { name = "Luke Kreczko", email = "kreczko@cern.ch" },
 ]
 maintainers = [
-    { name = "The Scikit-HEP admins", email = "UK-SwiftHep@cern.ch" },
+    { name = "The SWIFT-HEP admins", email = "UK-SwiftHep@cern.ch" },
 ]
 license = { file = "LICENSE" }
 
@@ -38,6 +38,8 @@ dynamic = ["version"]
 
 dependencies = [
     "typing_extensions >=3.7; python_version<'3.8'",
+    "dask",
+    "requests",
 ]
 
 [project.optional-dependencies]
