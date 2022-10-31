@@ -9,14 +9,14 @@ authors = [
     { name = "Luke Kreczko", email = "kreczko@cern.ch" },
 ]
 maintainers = [
-    { name = "The Scikit-HEP admins", email = "UK-SwiftHep@cern.ch" },
+    { name = "The SWIFT-HEP admins", email = "UK-SwiftHep@cern.ch" },
 ]
 license = { file = "LICENSE" }
 
 description = "DIRAC Executor for Dask"
 readme = "README.md"
 
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 
 classifiers = [
     "License :: OSI Approved :: BSD License",
@@ -27,7 +27,6 @@ classifiers = [
     "License :: OSI Approved :: BSD License",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -37,7 +36,9 @@ classifiers = [
 dynamic = ["version"]
 
 dependencies = [
-    "typing_extensions >=3.7; python_version<'3.8'",
+    "dask",
+    "requests",
+    "typer",
 ]
 
 [project.optional-dependencies]
@@ -70,20 +71,36 @@ testpaths = [
 
 [tool.mypy]
 files = "src"
-python_version = "3.7"
+python_version = "3.9"
 warn_unused_configs = true
-strict = true
-show_error_codes = true
-enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
-warn_unreachable = true
 
+disallow_any_generics = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+# [[tool.mypy.overrides]] not working, setting this to false instead
+disallow_untyped_decorators = false
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_return_any = true
+no_implicit_reexport = true
+strict_equality = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = "typer.*"
+implicit_reexport = true
 
 [tool.isort]
 profile = "black"
+known_third_party = ["typer", "click"]
 
 
 [tool.pylint]
-master.py-version = "3.7"
+master.py-version = "3.8"
 master.ignore-paths= ["src/dask_dirac/_version.py"]
 reports.output-format = "colorized"
 similarities.ignore-imports = "yes"
@@ -93,3 +110,6 @@ messages_control.disable = [
   "line-too-long",
   "wrong-import-position",
 ]
+
+[project.scripts]
+dask-dirac = "dask_dirac.cli:main"

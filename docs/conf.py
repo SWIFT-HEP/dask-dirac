@@ -12,7 +12,7 @@ from __future__ import annotations
 # -- Project information -----------------------------------------------------
 
 project = "dask-dirac"
-copyright = "2022, The Scikit-HEP admins"
+copyright = "2022, The SWIFT-HEP admins"
 author = "Luke Kreczko"
 
 
