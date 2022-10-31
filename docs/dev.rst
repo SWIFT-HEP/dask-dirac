@@ -5,7 +5,7 @@ Development server
 ------------------
 
 As discussed on `GitHub https://github.com/DIRACGrid/DIRAC/discussions/6121`_, there is a development server available for DIRAC.
-The server has some resources behind it and requires a manual registration to to the CS/Registry of lbcertifdirac70.cern.ch.
+The server has some resources behind it and requires a manual registration to to the CS/Registry of `lbcertifdirac70.cern.ch`.
 The developer needs to be a member of the dteam Virtual Organisation (VO) to be able to use the server.
 
 
