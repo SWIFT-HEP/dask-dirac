@@ -1,3 +1,4 @@
+"""Command line interface for dask-dirac"""
 from __future__ import annotations
 
 from typing import Any
@@ -38,8 +39,8 @@ def submit(
     ),
 ) -> None:
     """Submit a job to DIRAC server"""
-    with open(jdl_file) as f:
-        jdl = f.read()
+    with open(jdl_file, encoding="utf-8") as file_handle:
+        jdl = file_handle.read()
     result = _dirac.submit_job(server_url, jdl, capath, user_proxy)
     typer.echo(result)
 
