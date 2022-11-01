@@ -1,51 +1,58 @@
 """Module for HTTP DIRAC queries"""
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 import requests
 
 
-def _query(url: str, params: dict[str, str], capath: str, user_proxy: str) -> Any:
-    if not capath:
-        capath = "/etc/grid-security/certificates"
-    if not user_proxy:
-        user_proxy = (
-            "/tmp/x509up_u1000"  # TODO: default path should be /tmp/x509up_u<user id>
-        )
+@dataclass
+class DiracSettings:
+    server_url: str  # TODO: add validator
+    capath: str = "/etc/grid-security/certificates"
+    user_proxy: str = ""
+    query_url: str = ""
+
+
+def _query(settings: DiracSettings, params: dict[str, str]) -> Any:
     with requests.post(
-        url, data=params, cert=user_proxy, verify=capath, timeout=60
+        settings.query_url,
+        data=params,
+        cert=settings.user_proxy,
+        verify=settings.capath,
+        timeout=60,
     ) as result:
         return result.json()
 
 
-def submit_job(server_url: str, jdl: str, capath: str, user_proxy: str) -> Any:
+def submit_job(settings: DiracSettings, jdl: str) -> Any:
     """Submit a job to a DIRAC server"""
     endpoint = "WorkloadManagement/JobManager"
-    url = f"{server_url}/{endpoint}"
+    settings.query_url = f"{settings.server_url}/{endpoint}"
     params = {"method": "submitJob", "jobDesc": jdl}
-    return _query(url, params, capath, user_proxy)
+    return _query(settings, params)
 
 
-def get_jobs(server_url: str, capath: str, user_proxy: str) -> Any:
+def get_jobs(settings: DiracSettings) -> Any:
     """Get jobs from DIRAC server"""
     endpoint = "WorkloadManagement/JobMonitoring"
-    url = f"{server_url}/{endpoint}"
+    settings.query_url = f"{settings.server_url}/{endpoint}"
     params = {"method": "getJobs"}
-    return _query(url, params, capath, user_proxy)
+    return _query(settings, params)
 
 
-def get_max_parametric_jobs(server_url: str, capath: str, user_proxy: str) -> Any:
+def get_max_parametric_jobs(settings: DiracSettings) -> Any:
     """Get max parametric jobs from DIRAC server (mostly for testing)"""
     endpoint = "WorkloadManagement/JobManager"
-    url = f"{server_url}/{endpoint}"
+    settings.query_url = f"{settings.server_url}/{endpoint}"
     params = {"method": "getMaxParametricJobs"}
-    return _query(url, params, capath, user_proxy)
+    return _query(settings, params)
 
 
-def whoami(server_url: str, capath: str, user_proxy: str) -> Any:
+def whoami(settings: DiracSettings) -> Any:
     """Get user info from DIRAC server (mostly for testing)"""
     endpoint = "DataManagement/FileCatalog"
-    url = f"{server_url}/{endpoint}"
+    settings.query_url = f"{settings.server_url}/{endpoint}"
     params = {"method": "whoami"}
-    return _query(url, params, capath, user_proxy)
+    return _query(settings, params)
