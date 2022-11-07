@@ -22,7 +22,9 @@ def whoami(
     ),
 ) -> None:
     """Print the DN of the current user as seen by DIRAC server"""
-    result = _dirac.whoami(server_url, capath, user_proxy)
+    # settings could also be done via callback
+    settings = _dirac.DiracSettings(server_url, capath, user_proxy)
+    result = _dirac.whoami(settings)
     typer.echo(result)
 
 
@@ -41,7 +43,8 @@ def submit(
     """Submit a job to DIRAC server"""
     with open(jdl_file, encoding="utf-8") as file_handle:
         jdl = file_handle.read()
-    result = _dirac.submit_job(server_url, jdl, capath, user_proxy)
+    settings = _dirac.DiracSettings(server_url, capath, user_proxy)
+    result = _dirac.submit_job(settings, jdl)
     typer.echo(result)
 
 
@@ -57,7 +60,8 @@ def status(
     ),
 ) -> None:
     """Print the list of jobs"""
-    result = _dirac.get_jobs(server_url, capath, user_proxy)
+    settings = _dirac.DiracSettings(server_url, capath, user_proxy)
+    result = _dirac.get_jobs(settings)
     typer.echo(result)
 
 
@@ -73,7 +77,8 @@ def get_max_parametric_jobs(
     ),
 ) -> None:
     """Print the maximum number of parametric jobs"""
-    result = _dirac.get_max_parametric_jobs(server_url, capath, user_proxy)
+    settings = _dirac.DiracSettings(server_url, capath, user_proxy)
+    result = _dirac.get_max_parametric_jobs(settings)
     typer.echo(result)
 
 

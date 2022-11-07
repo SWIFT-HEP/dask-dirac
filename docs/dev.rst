@@ -47,3 +47,26 @@ dask-dirac status https://lbcertifdirac70.cern.ch:8443 \
     --user-proxy /tmp/x509up_u1000 \
     123456789
 ```
+
+
+Local software setup
+--------------------
+
+```bash
+sudo apt install voms-clients
+# copy
+# /etc/grid-security/certificates
+# /etc/grid-security/vomses
+# /etc/grid-security/vomsdir
+# from another node
+```
+
+For development server:
+```bash
+voms-proxy-init -voms dteam
+```
+
+For production server:
+```bash
+voms-proxy-init -voms gridpp # or VO under test (CMS, LZ)
+```
