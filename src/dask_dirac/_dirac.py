@@ -1,4 +1,7 @@
-"""Module for HTTP DIRAC queries"""
+"""Module for HTTP DIRAC queries
+This is kept separate from the Dask DiracCluster implementation
+since we might want to move it to a standalone dirac client
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass
