@@ -6,9 +6,12 @@ from __future__ import annotations
 from typing import Any
 
 from dask_jobqueue.core import Job, JobQueueCluster, cluster_parameters, job_parameters
+from distributed.deploy.spec import ProcessInterface
 
 
 class DiracJob(Job):
+    """Job class for Dirac"""
+
     def __init__(
         self,
         scheduler: Any = None,
@@ -21,7 +24,7 @@ class DiracJob(Job):
         )
 
 
-class DiracCluster(JobQueueCluster):
+class DiracCluster(JobQueueCluster):  # pylint: disable=missing-class-docstring
     __doc__ = f""" Launch Dask on a cluster via Dirac
 
     Parameters
@@ -41,3 +44,8 @@ class DiracCluster(JobQueueCluster):
     >>> client = Client(cluster)
     """
     job_cls = DiracJob
+
+    @classmethod
+    def from_name(cls, name: str) -> ProcessInterface:
+        """Create a cluster from a name"""
+        return super().from_name(name)

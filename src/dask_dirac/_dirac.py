@@ -12,6 +12,8 @@ import requests
 
 @dataclass
 class DiracSettings:
+    """Settings for DIRAC queries"""
+
     server_url: str  # TODO: add validator
     capath: str = "/etc/grid-security/certificates"
     user_proxy: str = ""
