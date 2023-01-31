@@ -30,7 +30,7 @@ repos:
   - id: rst-inline-touching-normal
 
 - repo: https://github.com/PyCQA/isort
-  rev: 5.10.1
+  rev: 5.11.5
   hooks:
   - id: isort
     args: ["-a", "from __future__ import annotations"]  # Python 3.7+
