@@ -37,7 +37,7 @@ OutputSandbox = {"std.out","std.err"};
 dask-dirac submit https://lbcertifdirac70.cern.ch:8443 \
     --capath /cvmfs/grid.cern.ch/etc/grid-security/certificates \
     --user-proxy /tmp/x509up_u1000 \
-    --jdl-file jdl.txt
+    jdl.txt
 ```
 
 Job status
