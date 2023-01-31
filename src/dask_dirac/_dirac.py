@@ -28,6 +28,7 @@ def _query(settings: DiracSettings, params: dict[str, str]) -> Any:
         verify=settings.capath,
         timeout=60,
     ) as result:
+        result.raise_for_status()
         return result.json()
 
 
