@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from typing import Any
 
 import requests
-
+import json
 
 @dataclass
 class DiracSettings:
@@ -35,7 +35,7 @@ def submit_job(settings: DiracSettings, jdl: str) -> Any:
     """Submit a job to a DIRAC server"""
     endpoint = "WorkloadManagement/JobManager"
     settings.query_url = f"{settings.server_url}/{endpoint}"
-    params = {"method": "submitJob", "jobDesc": jdl}
+    params = {"method": "submitJob", "args": json.dumps([jdl])}
     return _query(settings, params)
 
 
