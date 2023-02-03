@@ -4,6 +4,7 @@ since we might want to move it to a standalone dirac client
 """
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from typing import Any
 
@@ -35,7 +36,7 @@ def submit_job(settings: DiracSettings, jdl: str) -> Any:
     """Submit a job to a DIRAC server"""
     endpoint = "WorkloadManagement/JobManager"
     settings.query_url = f"{settings.server_url}/{endpoint}"
-    params = {"method": "submitJob", "jobDesc": jdl}
+    params = {"method": "submitJob", "args": json.dumps([jdl])}
     return _query(settings, params)
 
 
