@@ -88,6 +88,27 @@ def version() -> None:
     typer.echo(__version__)
 
 
+@app.command()
+def test() -> None:
+    """Run a test workflow"""
+    typer.echo("Running test workflow")
+    from dask.distributed import Client
+
+    from ._dask import DiracCluster
+
+    cluster = DiracCluster(
+        scheduler="https://dirac.gridpp.ac.uk:8443",
+    )
+    client = Client(cluster)
+
+    def hello(x: int) -> str:
+        return f"Hello {x}!"
+
+    futures = client.map(hello, range(10))
+    results = client.gather(futures)
+    typer.echo(results)
+
+
 def main() -> Any:
     """Entry point for the "xrdsum" command"""
     return app()
