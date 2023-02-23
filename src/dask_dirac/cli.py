@@ -32,13 +32,9 @@ def whoami(
 def submit(
     server_url: str,  # "https://dirac.gridpp.ac.uk:8443"
     jdl_file: str,  # "job.jdl"
-    capath: str = typer.Option(
-        default="/etc/grid-security/certificates",
-        help="path to CA certificate directory",
-    ),
-    user_proxy: str = typer.Option(
-        default="/tmp/x509up_u1000", help="path to user proxy"
-    ),
+    capath: str,
+    user_proxy: str,
+    dask_script: str, # from dask... can ignore
 ) -> None:
     """Submit a job to DIRAC server"""
     with open(jdl_file, encoding="utf-8") as file_handle:
