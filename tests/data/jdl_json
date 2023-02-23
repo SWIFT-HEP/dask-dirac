@@ -1,8 +1,0 @@
-{
-    "JobName": "DASK_DIRAC",
-    "Executable": "/bin/ls",
-    "Arguments": "-ltrA",
-    "StdOutput": "std.out",
-    "StdError": "std.err",
-    "OutputSandbox": ["std.out","std.err"]
-}
