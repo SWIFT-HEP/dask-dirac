@@ -13,8 +13,12 @@ from distributed.deploy.spec import ProcessInterface
 class DiracJob(Job):
     """Job class for Dirac"""
 
+
+    #
+    # TODO: Move grid_url, proxy and certs into args
+
     config_name = "htcondor" # avoid writing new one for now
-    scheduler_options={'port': '8786'}
+    scheduler_options={'port': '8786'} # unclear why but have to set this
     grid_url = "https://lbcertifdirac70.cern.ch:8443"
     user_proxy = "/tmp/x509up_u1000"
     certs = "/home/opc/diracos/etc/grid-security/certificates"
@@ -46,8 +50,9 @@ class DiracJob(Job):
         self.submit_command = ("dask-dirac submit "
                                + "%s " % DiracJob.grid_url
                                + "%s " % DiracJob.jdl_file
-                               + "%s " % DiracJob.certs
-                               + "%s " % DiracJob.user_proxy)
+                               + "--capath %s " % DiracJob.certs
+                               + "--user_proxy %s " % DiracJob.user_proxy
+                               + "--dask_script ")
 
 
 class DiracCluster(JobQueueCluster):  # pylint: disable=missing-class-docstring
