@@ -39,13 +39,17 @@ class DiracJob(Job):
 
         # Write JDL
         with open(DiracJob.jdl_file, 'w') as jdl:
-            jdl.write('JobName = "dask_worker";\n')
-            jdl.write('Executable = "singularity";\n')
-            jdl.write('Arguments = "{0}";\n'.format(DiracJob.singularity_args))
-            jdl.write('StdOutput = "std.out";\n')
-            jdl.write('StdError = "std.err";\n')
-            jdl.write('OutputSandbox = {"std.out","std.err"};\n')
-            jdl.write('OwnerGroup = "dteam_user";')
+            jdl_template = """
+            JobName = "dask_worker";
+            Executable = "singularity"
+            Arguments = "{args}";
+            StdOutput = "std.out";
+            StdError = "std.err";
+            OutputSandbox = {"std.out","std.err"};
+            OwnerGroup = "dteam_user";
+            """
+
+            jdl.write(jdl_template.format(args=DiracJob.singularity_args))
 
         self.submit_command = ("dask-dirac submit "
                                + "%s " % DiracJob.grid_url
