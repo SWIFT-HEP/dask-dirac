@@ -11,4 +11,4 @@ RUN sudo -n apt-get -y install gcc \
     && sudo rm -rf /var/lib/apt/lists/*
 
 
-RUN sudo pip3 install dask distributed
+RUN sudo pip3 install --no-cache-dir dask distributed
