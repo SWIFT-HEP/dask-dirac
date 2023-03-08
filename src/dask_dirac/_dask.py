@@ -41,7 +41,7 @@ class DiracJob(Job):
             jdl_template = f"""
             JobName = "dask_worker";
             Executable = "singularity"
-            Arguments = "{DiracJob.singularity_args}";
+            Arguments = {DiracJob.singularity_args!r};
             StdOutput = "std.out";
             StdError = "std.err";
             OutputSandbox = {{"std.out","std.err"}};
