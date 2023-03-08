@@ -37,7 +37,7 @@ class DiracJob(Job):
         )
 
         # Write JDL
-        with open(DiracJob.jdl_file, "w") as jdl:
+        with open(DiracJob.jdl_file, mode="w", encoding="utf-8") as jdl:
             jdl_template = f"""
             JobName = "dask_worker";
             Executable = "singularity"
