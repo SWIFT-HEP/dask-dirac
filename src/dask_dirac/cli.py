@@ -39,6 +39,7 @@ def submit(
     user_proxy: str = typer.Option(
         default="/tmp/x509up_u1000", help="path to user proxy"
     ),
+    # pylint: disable=unused-argument
     dask_script: str = typer.Option(
         default="who_cares_what_is_here", help="IGNORE THIS. workaround to ignore dask"
     ),

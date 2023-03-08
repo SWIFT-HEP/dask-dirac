@@ -21,10 +21,8 @@ class DiracJob(Job):
     grid_url = "https://lbcertifdirac70.cern.ch:8443"
     user_proxy = "/tmp/x509up_u1000"
     certs = "/home/opc/diracos/etc/grid-security/certificates"
-    scheduler_address = get("https://ifconfig.me").content.decode("utf8")
-    singularity_args = "exec --cleanenv docker://sameriksen/dask:debian dask-worker tcp://{}:8786".format(
-        scheduler_address
-    )
+    scheduler_address = get("https://ifconfig.me", timeout=30).content.decode("utf8")
+    singularity_args = f"exec --cleanenv docker://sameriksen/dask:debian dask-worker tcp://{scheduler_address}:8786"
     jdl_file = "/home/opc/grid_JDL"
 
     def __init__(
@@ -40,24 +38,24 @@ class DiracJob(Job):
 
         # Write JDL
         with open(DiracJob.jdl_file, "w") as jdl:
-            jdl_template = """
+            jdl_template = f"""
             JobName = "dask_worker";
             Executable = "singularity"
-            Arguments = "{args}";
+            Arguments = "{DiracJob.singularity_args}";
             StdOutput = "std.out";
             StdError = "std.err";
-            OutputSandbox = {"std.out","std.err"};
+            OutputSandbox = {{"std.out","std.err"}};
             OwnerGroup = "dteam_user";
             """
 
-            jdl.write(jdl_template.format(args=DiracJob.singularity_args))
+            jdl.write(jdl_template)
 
         self.submit_command = (
             "dask-dirac submit "
-            + "%s " % DiracJob.grid_url
-            + "%s " % DiracJob.jdl_file
-            + "--capath %s " % DiracJob.certs
-            + "--user_proxy %s " % DiracJob.user_proxy
+            + f"{DiracJob.grid_url} "
+            + f"{DiracJob.jdl_file} "
+            + f"--capath {DiracJob.certs} "
+            + f"--user_proxy {DiracJob.user_proxy} "
             + "--dask_script "
         )
 
