@@ -22,14 +22,14 @@ class DiracSettings:
 
 
 def _query(settings: DiracSettings, params: dict[str, str]) -> Any:
-    with requests.post(
+    result = requests.post(
         settings.query_url,
         data=params,
         cert=settings.user_proxy,
         verify=settings.capath,
         timeout=60,
-    ) as result:
-        return result.json()
+    )
+    return result.json()
 
 
 def submit_job(settings: DiracSettings, jdl: str) -> Any:

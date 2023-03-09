@@ -1,0 +1,7 @@
+JobName = "dask_debian";
+Executable = "singularity";
+Arguments = "exec --cleanenv docker://sameriksen/dask:debian dask-worker tcp://129.151.70.175:8786";
+StdOutput = "std.out";
+StdError = "std.err";
+OutputSandbox = {"std.out","std.err"};
+OwnerGroup = "dteam_user";
