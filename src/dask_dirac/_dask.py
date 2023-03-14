@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from typing import Any
+from os import getcwd
 
 from dask_jobqueue.core import Job, JobQueueCluster, cluster_parameters, job_parameters
 from distributed.deploy.spec import ProcessInterface
@@ -13,35 +14,41 @@ from requests import get
 class DiracJob(Job):
     """Job class for Dirac"""
 
-    #
-    # TODO: Move grid_url, proxy and certs into args
-
     config_name = "htcondor"  # avoid writing new one for now
-    scheduler_options = {"port": "8786"}  # unclear why but have to set this
-    grid_url = "https://lbcertifdirac70.cern.ch:8443"
-    user_proxy = "/tmp/x509up_u1000"
-    certs = "/home/opc/diracos/etc/grid-security/certificates"
     scheduler_address = get("https://ifconfig.me", timeout=30).content.decode("utf8")
     singularity_args = f"exec --cleanenv docker://sameriksen/dask:debian dask-worker tcp://{scheduler_address}:8786"
-    jdl_file = "/home/opc/grid_JDL"
 
     def __init__(
         self,
         scheduler: Any = None,
         name: str | None = None,
         config_name: str | None = None,
+        submission_url: str | None = None,
+        user_proxy: str | None = None,
+        cert_path: str | None = None,
+        jdl_file: str | None = None,
         **base_class_kwargs: dict[str, Any],
     ) -> None:
         super().__init__(
             scheduler=scheduler, name=name, config_name=config_name, **base_class_kwargs
         )
 
+
+        if submission_url is None:
+            submission_url = "https://lbcertifdirac70.cern.ch:8443"
+        if user_proxy is None:
+            user_proxy = "/tmp/x509up_u1000"
+        if jdl_file is None:
+            jdl_file = getcwd() + "/grid_JDL"
+        if cert_path is None:
+            cert_path = "/etc/grid-security/certificates"
+
         # Write JDL
-        with open(DiracJob.jdl_file, mode="w", encoding="utf-8") as jdl:
+        with open(jdl_file, mode="w", encoding="utf-8") as jdl:
             jdl_template = f"""
             JobName = "dask_worker";
-            Executable = "singularity"
-            Arguments = {DiracJob.singularity_args!r};
+            Executable = "singularity";
+            Arguments = "{DiracJob.singularity_args!s}";
             StdOutput = "std.out";
             StdError = "std.err";
             OutputSandbox = {{"std.out","std.err"}};
@@ -52,11 +59,11 @@ class DiracJob(Job):
 
         self.submit_command = (
             "dask-dirac submit "
-            + f"{DiracJob.grid_url} "
-            + f"{DiracJob.jdl_file} "
-            + f"--capath {DiracJob.certs} "
-            + f"--user_proxy {DiracJob.user_proxy} "
-            + "--dask_script "
+            + f"{submission_url} "
+            + f"{jdl_file} "
+            + f"--capath {cert_path} "
+            + f"--user-proxy {user_proxy} "
+            + "--dask-script "
         )
 
 
