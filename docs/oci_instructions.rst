@@ -28,8 +28,59 @@ be set.
 .. code-block:: python
 
     from dask_dirac import DiracCluster
-    cluster = DiracCluster(cores=1, memory='0.5GB')
+    cluster = DiracCluster(cores=1, memory='0.5GB', scheduler_options={"port":8786})
     cluster.scale(jobs=5)
 
     from dask.distributed import Client
     client = Client(cluster)
+
+
+
+Instructions from scratch
+=========================
+
+pre-reqs... ports to be open
+
+
+Setup proxy
+
+.. code-block:: bash
+
+    curl -LO https://github.com/DIRACGrid/DIRACOS2/releases/latest/download/DIRACOS-Linux-x86_64.sh
+    bash DIRACOS-Linux-x86_64.sh
+
+    #
+    source diracos2/diracos
+    pip install DIRAC
+
+    dirac-proxy-init --nocs
+    dirac-configure
+    dirac-proxy-init -g dteam_user
+
+
+Now get dask_dirac
+
+.. code-block:: bash
+
+    git clone git@github.com:SWIFT-HEP/dask-dirac.git
+    cd dask-dirac
+    pip install .
+
+Now test it out
+
+.. code-block:: python
+
+    from dask_dirac import DiracCluster
+    cluster = DiracCluster(cores=1, memory='0.5GB', scheduler_options={"port":8786})
+    cluster.scale(jobs=5)
+
+    from dask.distributed import Client
+    client = Client(cluster)
+
+
+DiracCluster options are;
+
+- submission_url="https://lbcertifdirac70.cern.ch:8443"
+- user_proxy="/tmp/x509up_u1000"
+- cert_path="/etc/grid-security/certificates"
+- jdl_file=os.getcwd() + "/grid_JDL"
