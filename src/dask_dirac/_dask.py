@@ -5,10 +5,13 @@ from __future__ import annotations
 
 from typing import Any
 from os import getcwd
+import logging
 
 from dask_jobqueue.core import Job, JobQueueCluster, cluster_parameters, job_parameters
 from distributed.deploy.spec import ProcessInterface
 from requests import get
+
+logger = logging.getLogger(__name__)
 
 
 class DiracJob(Job):
@@ -46,14 +49,14 @@ class DiracJob(Job):
         # Write JDL
         with open(jdl_file, mode="w", encoding="utf-8") as jdl:
             jdl_template = f"""
-            JobName = "dask_worker";
-            Executable = "singularity";
-            Arguments = "{DiracJob.singularity_args!s}";
-            StdOutput = "std.out";
-            StdError = "std.err";
-            OutputSandbox = {{"std.out","std.err"}};
-            OwnerGroup = "dteam_user";
-            """
+JobName = "dask_worker";
+Executable = "singularity";
+Arguments = "{DiracJob.singularity_args!s}";
+StdOutput = "std.out";
+StdError = "std.err";
+OutputSandbox = {{"std.out","std.err"}};
+OwnerGroup = "dteam_user";
+            """.lstrip()
 
             jdl.write(jdl_template)
 
