@@ -3,9 +3,9 @@
 # from dask.distributed import
 from __future__ import annotations
 
-from typing import Any
-from os import getcwd
 import logging
+from os import getcwd
+from typing import Any
 
 from dask_jobqueue.core import Job, JobQueueCluster, cluster_parameters, job_parameters
 from distributed.deploy.spec import ProcessInterface
@@ -18,8 +18,8 @@ class DiracJob(Job):
     """Job class for Dirac"""
 
     config_name = "htcondor"  # avoid writing new one for now
-    scheduler_address = get("https://ifconfig.me", timeout=30).content.decode("utf8")
-    singularity_args = f"exec --cleanenv docker://sameriksen/dask:debian dask-worker tcp://{scheduler_address}:8786"
+    public_address = get("https://ifconfig.me", timeout=30).content.decode("utf8")
+    singularity_args = f"exec --cleanenv docker://sameriksen/dask:debian dask-worker tcp://{public_address}:8786"
 
     def __init__(
         self,
@@ -36,7 +36,6 @@ class DiracJob(Job):
             scheduler=scheduler, name=name, config_name=config_name, **base_class_kwargs
         )
 
-
         if submission_url is None:
             submission_url = "https://lbcertifdirac70.cern.ch:8443"
         if user_proxy is None:
@@ -51,12 +50,12 @@ class DiracJob(Job):
             jdl_template = f"""
 JobName = "dask_worker";
 Executable = "singularity";
-Arguments = "{DiracJob.singularity_args!s}";
+Arguments = \" {DiracJob.singularity_args!s} \";
 StdOutput = "std.out";
 StdError = "std.err";
 OutputSandbox = {{"std.out","std.err"}};
 OwnerGroup = "dteam_user";
-            """.lstrip()
+""".lstrip()
 
             jdl.write(jdl_template)
 
