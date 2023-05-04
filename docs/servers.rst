@@ -13,7 +13,7 @@ Certification Server
 
 Setup DIRAC UI
 
-.. code-block::sh
+.. code-block:: sh
 
     mkdir dirac_ui
     cd dirac_ui
@@ -28,7 +28,7 @@ Setup DIRAC UI
 
 Test submission
 
-.. code-block::sh
+.. code-block:: sh
 
     dask-dirac whoami https://lbcertifdirac70.cern.ch:8443 --capath /cvmfs/grid.cern.ch/etc/grid-security/certificates --user-proxy /tmp/x509up_u1000
 
@@ -38,7 +38,7 @@ Development Server
 
 Setup DIRAC UI
 
-.. code-block::sh
+.. code-block:: sh
 
     mkdir dirac_ui
     cd dirac_ui
@@ -53,9 +53,8 @@ Setup DIRAC UI
 
 Test submission
 
-.. code-block::sh
+.. code-block:: sh
 
     dask-dirac whoami https://diracdev.grid.hep.ph.ic.ac.uk:8443 --capath /cvmfs/grid.cern.ch/etc/grid-security/certificates --user-proxy /tmp/x509up_u1000
-
 
 now works
