@@ -19,8 +19,6 @@ class DiracJob(Job):
 
     config_name = "htcondor"  # avoid writing new one for now
     public_address = get("https://ifconfig.me", timeout=30).content.decode("utf8")
-    #singularity_args = f"exec --cleanenv docker://sameriksen/dask:debian dask worker tcp://{public_address}:8786"
-    #singularity_args = f"exec --cleanenv docker://sameriksen/dask:conda bash -c 'conda init bash && source .bashrc && conda activate dask_dirac && dask worker tcp://{public_address}:8786' "
     singularity_args = f"exec --cleanenv docker://sameriksen/dask:python3.10.9 dask worker tcp://{public_address}:8786"
 
     def __init__(
@@ -45,7 +43,7 @@ class DiracJob(Job):
         if user_proxy is None:
             user_proxy = "/tmp/x509up_u1000"
         if jdl_file is None:
-            jdl_file = getcwd() + "/grid_JDL"
+            jdl_file = "/tmp/dask-dirac-JDL"
         if cert_path is None:
             cert_path = "/etc/grid-security/certificates"
         if owner_group is None:
