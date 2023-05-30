@@ -63,7 +63,7 @@ OwnerGroup = "{owner_group}";
 
             if dirac_site is not None:
                 jdl_template += f"""
-DiracSite = "{dirac_site}";
+Site = "{dirac_site}";
 """.lstrip()
 
             jdl.write(jdl_template)
