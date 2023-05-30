@@ -30,6 +30,8 @@ class DiracJob(Job):
         user_proxy: str | None = None,
         cert_path: str | None = None,
         jdl_file: str | None = None,
+        owner_group: str | None = None,
+        dirac_site: str | None = None,
         **base_class_kwargs: dict[str, Any],
     ) -> None:
         super().__init__(
@@ -44,17 +46,24 @@ class DiracJob(Job):
             jdl_file = getcwd() + "/grid_JDL"
         if cert_path is None:
             cert_path = "/etc/grid-security/certificates"
+        if owner_group is None:
+            owner_group = "dteam_user"
 
         # Write JDL
         with open(jdl_file, mode="w", encoding="utf-8") as jdl:
             jdl_template = f"""
-JobName = "dask_worker";
+JobName = "dask-dirac: dask worker";
 Executable = "singularity";
 Arguments = \" {DiracJob.singularity_args!s} \";
 StdOutput = "std.out";
 StdError = "std.err";
 OutputSandbox = {{"std.out","std.err"}};
-OwnerGroup = "dteam_user";
+OwnerGroup = "{owner_group}";
+""".lstrip()
+
+            if dirac_site is not None:
+                jdl_template += f"""
+DiracSite = "{dirac_site}";
 """.lstrip()
 
             jdl.write(jdl_template)

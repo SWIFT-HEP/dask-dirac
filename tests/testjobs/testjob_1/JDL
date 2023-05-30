@@ -1,4 +1,4 @@
-JobName = "testjob_1";
+JobName = "dask-dirac: testjob_1";
 Executable = "/bin/ls";
 Arguments = "-ltrA";
 StdOutput = "std.out";
