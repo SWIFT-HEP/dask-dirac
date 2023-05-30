@@ -19,7 +19,9 @@ class DiracJob(Job):
 
     config_name = "htcondor"  # avoid writing new one for now
     public_address = get("https://ifconfig.me", timeout=30).content.decode("utf8")
-    singularity_args = f"exec --cleanenv docker://sameriksen/dask:debian dask-worker tcp://{public_address}:8786"
+    #singularity_args = f"exec --cleanenv docker://sameriksen/dask:debian dask worker tcp://{public_address}:8786"
+    #singularity_args = f"exec --cleanenv docker://sameriksen/dask:conda bash -c 'conda init bash && source .bashrc && conda activate dask_dirac && dask worker tcp://{public_address}:8786' "
+    singularity_args = f"exec --cleanenv docker://sameriksen/dask:python3.10.9 dask worker tcp://{public_address}:8786"
 
     def __init__(
         self,
