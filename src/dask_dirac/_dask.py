@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import logging
-from os import getcwd
 from typing import Any
 
 from dask_jobqueue.core import Job, JobQueueCluster, cluster_parameters, job_parameters
@@ -58,12 +57,12 @@ Arguments = \" {DiracJob.singularity_args!s} \";
 StdOutput = "std.out";
 StdError = "std.err";
 OutputSandbox = {{"std.out","std.err"}};
-OwnerGroup = "{owner_group}";
+OwnerGroup = {owner_group!r};
 """.lstrip()
 
             if dirac_site is not None:
                 jdl_template += f"""
-Site = "{dirac_site}";
+Site = {dirac_site!r};
 """.lstrip()
 
             jdl.write(jdl_template)
