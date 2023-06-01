@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import logging
+import hashlib
+import getpass
 from typing import Any
 
 from dask_jobqueue.core import Job, JobQueueCluster, cluster_parameters, job_parameters
@@ -42,7 +44,7 @@ class DiracJob(Job):
         if user_proxy is None:
             user_proxy = "/tmp/x509up_u1000"
         if jdl_file is None:
-            jdl_file = "/tmp/dask-dirac-JDL"
+            jdl_file = "/tmp/dask-dirac-JDL_" + hashlib.sha1(getpass.getuser()).hexdigest()[:8]
         if cert_path is None:
             cert_path = "/etc/grid-security/certificates"
         if owner_group is None:
