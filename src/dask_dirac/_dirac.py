@@ -20,7 +20,8 @@ class DiracSettings:
     user_proxy: str = ""
     query_url: str = ""
 
-def _set_defaults(settings: DiracSettings, params: dict[str, str]):
+
+def _set_defaults(settings: DiracSettings, params: dict[str, str]) -> dict[str, str]:
     if "diracdev.grid.hep.ph.ic.ac.uk" in settings.query_url:
         params["clientSetup"] = params.get("clientSetup", "GridPP")
     return params
