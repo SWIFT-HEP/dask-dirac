@@ -1,4 +1,4 @@
-JobName = "dask_debian";
+JobName = "dask-dirac: dask_debian";
 Executable = "singularity";
 Arguments = "exec --cleanenv docker://sameriksen/dask:debian dask-worker tcp://129.151.70.175:8786";
 StdOutput = "std.out";

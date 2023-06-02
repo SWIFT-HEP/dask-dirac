@@ -3,8 +3,9 @@
 # from dask.distributed import
 from __future__ import annotations
 
+import getpass
+import hashlib
 import logging
-from os import getcwd
 from typing import Any
 
 from dask_jobqueue.core import Job, JobQueueCluster, cluster_parameters, job_parameters
@@ -19,7 +20,7 @@ class DiracJob(Job):
 
     config_name = "htcondor"  # avoid writing new one for now
     public_address = get("https://ifconfig.me", timeout=30).content.decode("utf8")
-    singularity_args = f"exec --cleanenv docker://sameriksen/dask:debian dask-worker tcp://{public_address}:8786"
+    singularity_args = f"exec --cleanenv docker://sameriksen/dask:python3.10.9 dask worker tcp://{public_address}:8786"
 
     def __init__(
         self,
@@ -30,6 +31,8 @@ class DiracJob(Job):
         user_proxy: str | None = None,
         cert_path: str | None = None,
         jdl_file: str | None = None,
+        owner_group: str | None = None,
+        dirac_site: str | None = None,
         **base_class_kwargs: dict[str, Any],
     ) -> None:
         super().__init__(
@@ -41,20 +44,30 @@ class DiracJob(Job):
         if user_proxy is None:
             user_proxy = "/tmp/x509up_u1000"
         if jdl_file is None:
-            jdl_file = getcwd() + "/grid_JDL"
+            jdl_file = (
+                "/tmp/dask-dirac-JDL_"
+                + hashlib.sha1(getpass.getuser().encode("utf-8")).hexdigest()
+            )
         if cert_path is None:
             cert_path = "/etc/grid-security/certificates"
+        if owner_group is None:
+            owner_group = "dteam_user"
 
         # Write JDL
         with open(jdl_file, mode="w", encoding="utf-8") as jdl:
             jdl_template = f"""
-JobName = "dask_worker";
+JobName = "dask-dirac: dask worker";
 Executable = "singularity";
 Arguments = \" {DiracJob.singularity_args!s} \";
 StdOutput = "std.out";
 StdError = "std.err";
 OutputSandbox = {{"std.out","std.err"}};
-OwnerGroup = "dteam_user";
+OwnerGroup = {owner_group!r};
+""".lstrip()
+
+            if dirac_site is not None:
+                jdl_template += f"""
+Site = {dirac_site!r};
 """.lstrip()
 
             jdl.write(jdl_template)

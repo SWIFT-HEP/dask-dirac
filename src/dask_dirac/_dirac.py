@@ -21,7 +21,15 @@ class DiracSettings:
     query_url: str = ""
 
 
+def _set_defaults(settings: DiracSettings, params: dict[str, str]) -> dict[str, str]:
+    if "diracdev.grid.hep.ph.ic.ac.uk" in settings.query_url:
+        params["clientSetup"] = params.get("clientSetup", "GridPP")
+    return params
+
+
 def _query(settings: DiracSettings, params: dict[str, str]) -> Any:
+    params = _set_defaults(settings, params)
+
     result = requests.post(
         settings.query_url,
         data=params,

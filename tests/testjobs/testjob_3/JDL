@@ -1,4 +1,4 @@
-JobName = "testjob_3";
+JobName = "dask-dirac: testjob_3";
 Executable = "singularity";
 Arguments = "run docker://hello-world";
 StdOutput = "std.out";
