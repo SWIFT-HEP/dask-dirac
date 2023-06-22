@@ -46,7 +46,7 @@ class DiracJob(Job):
         if jdl_file is None:
             jdl_file = (
                 "/tmp/dask-dirac-JDL_"
-                + hashlib.sha1(getpass.getuser().encode("utf-8")).hexdigest()
+                + hashlib.sha1(getpass.getuser().encode("utf-8")).hexdigest()[:8]
             )
         if cert_path is None:
             cert_path = "/etc/grid-security/certificates"
