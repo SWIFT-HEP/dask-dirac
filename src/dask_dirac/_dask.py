@@ -15,25 +15,30 @@ from requests import get
 logger = logging.getLogger(__name__)
 
 
+def _get_site_ports(site: str) -> str | None:
+    if site == "LCG.UKI-SOUTHGRID-RALPP.uk":
+        return "--worker-port 50000:52000"
+    else:
+        return None
+
+
 class DiracJob(Job):
     """Job class for Dirac"""
 
     config_name = "htcondor"  # avoid writing new one for now
-    public_address = get("https://ifconfig.me", timeout=30).content.decode("utf8")
-    singularity_args = f"exec --cleanenv docker://sameriksen/dask:python3.10.9 dask worker tcp://{public_address}:8786"
 
     def __init__(
-        self,
-        scheduler: Any = None,
-        name: str | None = None,
-        config_name: str | None = None,
-        submission_url: str | None = None,
-        user_proxy: str | None = None,
-        cert_path: str | None = None,
-        jdl_file: str | None = None,
-        owner_group: str | None = None,
-        dirac_site: str | None = None,
-        **base_class_kwargs: dict[str, Any],
+            self,
+            scheduler: Any = None,
+            name: str | None = None,
+            config_name: str | None = None,
+            submission_url: str | None = None,
+            user_proxy: str | None = None,
+            cert_path: str | None = None,
+            jdl_file: str | None = None,
+            owner_group: str | None = None,
+            dirac_site: str | None = None,
+            **base_class_kwargs: dict[str, Any],
     ) -> None:
         super().__init__(
             scheduler=scheduler, name=name, config_name=config_name, **base_class_kwargs
@@ -45,40 +50,44 @@ class DiracJob(Job):
             user_proxy = "/tmp/x509up_u1000"
         if jdl_file is None:
             jdl_file = (
-                "/tmp/dask-dirac-JDL_"
-                + hashlib.sha1(getpass.getuser().encode("utf-8")).hexdigest()[:8]
+                    "/tmp/dask-dirac-JDL_"
+                    + hashlib.sha1(getpass.getuser().encode("utf-8")).hexdigest()[:8]
             )
         if cert_path is None:
             cert_path = "/etc/grid-security/certificates"
         if owner_group is None:
             owner_group = "dteam_user"
 
-        # Write JDL
-        with open(jdl_file, mode="w", encoding="utf-8") as jdl:
-            jdl_template = f"""
+        public_address = get("https://ifconfig.me", timeout=30).content.decode("utf8")
+        singularity_args = f"exec --cleanenv docker://sameriksen/dask:python3.10.9 dask worker tcp://{public_address}:8786"
+        jdl_template = """
 JobName = "dask-dirac: dask worker";
 Executable = "singularity";
-Arguments = \" {DiracJob.singularity_args!s} \";
+Arguments = \"{executable_args}\";
 StdOutput = "std.out";
 StdError = "std.err";
 OutputSandbox = {{"std.out","std.err"}};
-OwnerGroup = {owner_group!r};
+OwnerGroup = {owner};
+""".lstrip()
+        if dirac_site is not None:
+            singularity_args += " " + _get_site_ports(dirac_site)
+            jdl_template += f"""
+Site = \"{dirac_site!s}\";
 """.lstrip()
 
-            if dirac_site is not None:
-                jdl_template += f"""
-Site = {dirac_site!r};
-""".lstrip()
+        # Write JDL
+        with open(jdl_file, mode="w", encoding="utf-8") as jdl:
 
-            jdl.write(jdl_template)
+            jdl.write(jdl_template.format(executable_args=singularity_args,
+                                          owner=owner_group))
 
         self.submit_command = (
-            "dask-dirac submit "
-            + f"{submission_url} "
-            + f"{jdl_file} "
-            + f"--capath {cert_path} "
-            + f"--user-proxy {user_proxy} "
-            + "--dask-script "
+                "dask-dirac submit "
+                + f"{submission_url} "
+                + f"{jdl_file} "
+                + f"--capath {cert_path} "
+                + f"--user-proxy {user_proxy} "
+                + "--dask-script "
         )
 
 
