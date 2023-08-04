@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)
 def _get_site_ports(site: str) -> str:
     if site == "LCG.UKI-SOUTHGRID-RALPP.uk":
         return " --worker-port 50000:52000"
-    else:
-        return " "  # None
+
+    return " "  # None
 
 
 class DiracJob(Job):
