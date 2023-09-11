@@ -58,7 +58,8 @@ class DiracJob(Job):
         if owner_group is None:
             owner_group = "dteam_user"
 
-        public_address = get("https://ifconfig.me", timeout=30).content.decode("utf8")
+        # public_address = get("https://ifconfig.me", timeout=30).content.decode("utf8")
+        public_address = get("https://v4.ident.me/", timeout=30).content.decode("utf8")
         singularity_args = f"exec --cleanenv docker://sameriksen/dask:python3.10.9 dask worker tcp://{public_address}:8786"
         jdl_template = """
 JobName = "dask-dirac: dask worker";
@@ -73,7 +74,9 @@ OwnerGroup = {owner};
             singularity_args += _get_site_ports(dirac_site)
             jdl_template += f"""
 Site = {dirac_site!r};
-""".lstrip()
+""".lstrip().replace(
+                "'", '"'
+            )
 
         # Write JDL
         with open(jdl_file, mode="w", encoding="utf-8") as jdl:
