@@ -10,5 +10,5 @@ from __future__ import annotations
 from ._dask import DiracCluster
 from ._version import get_versions
 
-__version__ = get_versions()['version']
+__version__ = get_versions()["version"]
 __all__ = ("__version__", "DiracCluster")
