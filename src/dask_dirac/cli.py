@@ -87,6 +87,24 @@ def get_max_parametric_jobs(
 
 
 @app.command()
+def get_directory_dump(
+    server_url: str,  # "https://dirac.gridpp.ac.uk:8443"
+    lfns: str,  # "job.jdl"
+    capath: str = typer.Option(
+        default="/etc/grid-security/certificates",
+        help="path to CA certificate directory",
+    ),
+    user_proxy: str = typer.Option(
+        default="/tmp/x509up_u1000", help="path to user proxy"
+    ),
+) -> None:
+    """Print to contents of a directory"""
+    settings = _dirac.DiracSettings(server_url, capath, user_proxy)
+    result = _dirac.get_directory_dump(settings, lfns)
+    typer.echo(result)
+
+
+@app.command()
 def version() -> None:
     """Print the version number"""
     typer.echo(__version__)

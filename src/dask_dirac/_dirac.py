@@ -70,3 +70,19 @@ def whoami(settings: DiracSettings) -> Any:
     settings.query_url = f"{settings.server_url}/{endpoint}"
     params = {"method": "whoami"}
     return _query(settings, params)
+
+
+def get_users(settings: DiracSettings) -> Any:
+    """Get users from DIRAC server (mostly for testing)"""
+    endpoint = "DataManagement/FileCatalog"
+    settings.query_url = f"{settings.server_url}/{endpoint}"
+    params = {"method": "getUsers"}
+    return _query(settings, params)
+
+
+def get_directory_dump(settings: DiracSettings, lfns: str) -> Any:
+    """Get directory dump from DIRAC server"""
+    endpoint = "DataManagement/FileCatalog"
+    settings.query_url = f"{settings.server_url}/{endpoint}"
+    params = {"method": "getDirectoryDump", "args": json.dumps([lfns])}
+    return _query(settings, params)
