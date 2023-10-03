@@ -86,3 +86,19 @@ def get_directory_dump(settings: DiracSettings, lfns: str) -> Any:
     settings.query_url = f"{settings.server_url}/{endpoint}"
     params = {"method": "getDirectoryDump", "args": json.dumps([lfns])}
     return _query(settings, params)
+
+
+def create_directory(settings: DiracSettings, lfns: str) -> Any:
+    """Create directory on DIRAC server"""
+    endpoint = "DataManagement/FileCatalog"
+    settings.query_url = f"{settings.server_url}/{endpoint}"
+    params = {"method": "createDirectory", "args": json.dumps([lfns])}
+    return _query(settings, params)
+
+
+def remove_directory(settings: DiracSettings, lfns: str) -> Any:
+    """Remove directory on DIRAC server"""
+    endpoint = "DataManagement/FileCatalog"
+    settings.query_url = f"{settings.server_url}/{endpoint}"
+    params = {"method": "removeDirectory", "args": json.dumps([lfns])}
+    return _query(settings, params)
