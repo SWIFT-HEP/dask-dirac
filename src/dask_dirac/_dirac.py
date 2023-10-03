@@ -72,14 +72,6 @@ def whoami(settings: DiracSettings) -> Any:
     return _query(settings, params)
 
 
-def get_users(settings: DiracSettings) -> Any:
-    """Get users from DIRAC server (mostly for testing)"""
-    endpoint = "DataManagement/FileCatalog"
-    settings.query_url = f"{settings.server_url}/{endpoint}"
-    params = {"method": "getUsers"}
-    return _query(settings, params)
-
-
 def get_directory_dump(settings: DiracSettings, lfns: str) -> Any:
     """Get directory dump from DIRAC server"""
     endpoint = "DataManagement/FileCatalog"
@@ -101,4 +93,20 @@ def remove_directory(settings: DiracSettings, lfns: str) -> Any:
     endpoint = "DataManagement/FileCatalog"
     settings.query_url = f"{settings.server_url}/{endpoint}"
     params = {"method": "removeDirectory", "args": json.dumps([lfns])}
+    return _query(settings, params)
+
+
+def remove_file(settings: DiracSettings, lfns: str) -> Any:
+    """Remove file to directory on DIRAC server"""
+    endpoint = "DataManagement/FileCatalog"
+    settings.query_url = f"{settings.server_url}/{endpoint}"
+    params = {"method": "removeFile", "args": json.dumps([lfns])}
+    return _query(settings, params)
+
+
+def add_file(settings: DiracSettings, lfns: str) -> Any:
+    """Add file to directory on DIRAC server"""
+    endpoint = "DataManagement/FileCatalog"
+    settings.query_url = f"{settings.server_url}/{endpoint}"
+    params = {"method": "addFile", "args": json.dumps([lfns])}
     return _query(settings, params)

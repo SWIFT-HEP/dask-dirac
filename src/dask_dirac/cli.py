@@ -141,6 +141,45 @@ def remove_directory(
 
 
 @app.command()
+def remove_file(
+    server_url: str,
+    lfns: str,
+    capath: str = typer.Option(
+        default="/etc/grid-security/certificates",
+        help="path to CA certificate directory",
+    ),
+    user_proxy: str = typer.Option(
+        default="/tmp/x509up_u1000", help="path to user proxy"
+    ),
+) -> None:
+    """Remove a file"""
+
+    settings = _dirac.DiracSettings(server_url, capath, user_proxy)
+    result = _dirac.remove_file(settings, lfns)
+    typer.echo(result)
+
+
+@app.command()
+def add_file(
+    server_url: str,
+    capath: str = typer.Option(
+        default="/etc/grid-security/certificates",
+        help="path to CA certificate directory",
+    ),
+    user_proxy: str = typer.Option(
+        default="/tmp/x509up_u1000", help="path to user proxy"
+    ),
+) -> None:
+    """Add a file"""
+
+    # lfns = 'LFN = "/gridpp/user/s/seriksen/test.npz";\nPath = "/users/ak18773/SWIFT_HEP/dask-dirac/test.py";'#\nSE="UKI-SOUTHGRID-RALPP-disk";\n'
+    lfns = "/users/ak18773/SWIFT_HEP/dask-dirac/test.py"
+    settings = _dirac.DiracSettings(server_url, capath, user_proxy)
+    result = _dirac.add_file(settings, lfns)
+    typer.echo(result)
+
+
+@app.command()
 def version() -> None:
     """Print the version number"""
     typer.echo(__version__)
