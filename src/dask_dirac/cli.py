@@ -162,6 +162,8 @@ def remove_file(
 @app.command()
 def add_file(
     server_url: str,
+    local_file: str,
+    remote_file: str,
     capath: str = typer.Option(
         default="/etc/grid-security/certificates",
         help="path to CA certificate directory",
@@ -169,13 +171,12 @@ def add_file(
     user_proxy: str = typer.Option(
         default="/tmp/x509up_u1000", help="path to user proxy"
     ),
+    overwrite: bool = typer.Option(default=False, help="overwrite existing file"),
 ) -> None:
     """Add a file"""
 
-    # lfns = 'LFN = "/gridpp/user/s/seriksen/test.npz";\nPath = "/users/ak18773/SWIFT_HEP/dask-dirac/test.py";'#\nSE="UKI-SOUTHGRID-RALPP-disk";\n'
-    lfns = "/users/ak18773/SWIFT_HEP/dask-dirac/test.py"
     settings = _dirac.DiracSettings(server_url, capath, user_proxy)
-    result = _dirac.add_file(settings, lfns)
+    result = _dirac.add_file(settings, local_file, remote_file, overwrite)
     typer.echo(result)
 
 

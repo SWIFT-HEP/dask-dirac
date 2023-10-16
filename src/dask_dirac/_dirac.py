@@ -8,6 +8,7 @@ import json
 from dataclasses import dataclass
 from typing import Any
 
+import gfal2
 import requests
 
 
@@ -104,9 +105,35 @@ def remove_file(settings: DiracSettings, lfns: str) -> Any:
     return _query(settings, params)
 
 
-def add_file(settings: DiracSettings, lfns: str) -> Any:
+def add_file(
+    settings: DiracSettings, local_file: str, remote_file: str, overwrite: bool
+) -> Any:
     """Add file to directory on DIRAC server"""
-    endpoint = "DataManagement/FileCatalog"
-    settings.query_url = f"{settings.server_url}/{endpoint}"
-    params = {"method": "addFile", "args": json.dumps([lfns])}
-    return _query(settings, params)
+    # example: https://github.com/cern-fts/gfal2-python/blob/develop/example/python/gfal2_copy.py
+    # For now put everything under swift-hep at RAL site
+    base_destination = (
+        "https://mover.pp.rl.ac.uk:2880/pnfs/pp.rl.ac.uk/data/gridpp/swift-hep/"
+    )
+    destination = f"{base_destination}{local_file}"
+    source = f"file://{local_file}"
+    context = gfal2.creat_context()
+
+    params = context.transfer_parameters()
+    # don't set anything for now, expect an error
+    # issue with gfal2 in dask-dirac env, needs investigation
+    if overwrite:
+        params.overwrite = True
+    context.filecopy(params, source, destination)
+
+    # lfns = 'LFN = "/gridpp/user/s/seriksen/test.npz";
+    # Path = "/users/ak18773/SWIFT_HEP/dask-dirac/test.py";
+    # SE="UKI-SOUTHGRID-RALPP-disk";\n'
+    # lfns = "/users/ak18773/SWIFT_HEP/dask-dirac/test.py"
+
+    # then do registration
+    # endpoint = "DataManagement/FileCatalog"
+    # settings.query_url = f"{settings.server_url}/{endpoint}"
+    # params = {"method": "addFile", "args": json.dumps([lfns])}
+    # return _query(settings, params)
+
+    return None
