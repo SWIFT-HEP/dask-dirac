@@ -5,10 +5,13 @@ since we might want to move it to a standalone dirac client
 from __future__ import annotations
 
 import json
+import os
+import zlib
 from dataclasses import dataclass
 from typing import Any, Generator
 
 import _io
+import gfal2  # pylint: disable=import-error
 import requests
 
 
@@ -107,7 +110,6 @@ def remove_file(settings: DiracSettings, lfns: str) -> Any:
 
 def _adler32(file_path: str) -> str:
     """Calculate adler32 checksum of the supplied file"""
-    import zlib
 
     def _read_chunk(
         file_descriptor: _io.BufferedReader, size: int = 1048576
@@ -142,10 +144,6 @@ def add_file(
     # example: https://github.com/cern-fts/gfal2-python/blob/develop/example/python/gfal2_copy.py
     # For now put everything under swift-hep at RAL site
     base_destination = "https://mover.pp.rl.ac.uk:2880/pnfs/pp.rl.ac.uk/data/gridpp/"
-
-    import os
-
-    import gfal2  # pylint: disable=import-error
 
     # upload the file to server
     destination = f"{base_destination}{remote_file}"
