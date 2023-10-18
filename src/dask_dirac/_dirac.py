@@ -8,7 +8,6 @@ import json
 from dataclasses import dataclass
 from typing import Any
 
-import gfal2
 import requests
 
 
@@ -114,6 +113,8 @@ def add_file(
     base_destination = (
         "https://mover.pp.rl.ac.uk:2880/pnfs/pp.rl.ac.uk/data/gridpp/swift-hep/"
     )
+    import gfal2
+
     destination = f"{base_destination}{local_file}"
     source = f"file://{local_file}"
     context = gfal2.creat_context()
@@ -136,4 +137,4 @@ def add_file(
     # params = {"method": "addFile", "args": json.dumps([lfns])}
     # return _query(settings, params)
 
-    return None
+    return 43
