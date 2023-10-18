@@ -145,7 +145,7 @@ def add_file(
 
     import os
 
-    import gfal2
+    import gfal2  # pylint: disable=import-error
 
     # upload the file to server
     destination = f"{base_destination}{remote_file}"
