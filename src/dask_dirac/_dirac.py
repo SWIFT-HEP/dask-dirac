@@ -6,8 +6,9 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Generator
 
+import _io
 import requests
 
 
@@ -104,37 +105,73 @@ def remove_file(settings: DiracSettings, lfns: str) -> Any:
     return _query(settings, params)
 
 
+def _adler32(file_path: str) -> str:
+    """Calculate adler32 checksum of the supplied file"""
+    import zlib
+
+    def _read_chunk(
+        file_descriptor: _io.BufferedReader, size: int = 1048576
+    ) -> Generator[bytes, None, None]:
+        """Read a chunk of data from a file-like object"""
+        while True:
+            data = file_descriptor.read(size)
+            if not data:
+                break
+            yield data
+
+    with open(file_path, "rb") as input_file:
+        adler_decimal = 1
+        for data in _read_chunk(input_file):
+            adler_decimal = zlib.adler32(data, adler_decimal)
+
+    # change checksum from decimal to hex
+    adler_hex = (
+        hex(adler_decimal & 0xFFFFFFFF)
+        .lower()
+        .replace("l", "")
+        .replace("x", "0000")[-8:]
+    )
+
+    return adler_hex
+
+
 def add_file(
     settings: DiracSettings, local_file: str, remote_file: str, overwrite: bool
 ) -> Any:
     """Add file to directory on DIRAC server"""
     # example: https://github.com/cern-fts/gfal2-python/blob/develop/example/python/gfal2_copy.py
     # For now put everything under swift-hep at RAL site
-    base_destination = (
-        "https://mover.pp.rl.ac.uk:2880/pnfs/pp.rl.ac.uk/data/gridpp/swift-hep/"
-    )
+    base_destination = "https://mover.pp.rl.ac.uk:2880/pnfs/pp.rl.ac.uk/data/gridpp/"
+
+    import os
+
     import gfal2
 
-    destination = f"{base_destination}{local_file}"
+    # upload the file to server
+    destination = f"{base_destination}{remote_file}"
     source = f"file://{local_file}"
     context = gfal2.creat_context()
 
     params = context.transfer_parameters()
-    # don't set anything for now, expect an error
-    # issue with gfal2 in dask-dirac env, needs investigation
+
     if overwrite:
         params.overwrite = True
+
     context.filecopy(params, source, destination)
 
-    # lfns = 'LFN = "/gridpp/user/s/seriksen/test.npz";
-    # Path = "/users/ak18773/SWIFT_HEP/dask-dirac/test.py";
-    # SE="UKI-SOUTHGRID-RALPP-disk";\n'
-    # lfns = "/users/ak18773/SWIFT_HEP/dask-dirac/test.py"
+    # register file
+    endpoint = "DataManagement/FileCatalog"
+    settings.query_url = f"{settings.server_url}/{endpoint}"
 
-    # then do registration
-    # endpoint = "DataManagement/FileCatalog"
-    # settings.query_url = f"{settings.server_url}/{endpoint}"
-    # params = {"method": "addFile", "args": json.dumps([lfns])}
-    # return _query(settings, params)
+    lfns = {
+        remote_file: {
+            "PFN": remote_file,
+            "SE": "UKI-SOUTHGRID-RALPP-disk",
+            "Size": os.path.getsize(local_file),
+            "Checksum": _adler32(local_file),
+        }
+    }
 
-    return 43
+    params = {"method": "addFile", "args": json.dumps([lfns])}
+
+    return _query(settings, params)
