@@ -21,4 +21,3 @@ RUN ln -s /usr/bin/python3 /usr/bin/python
 # Install python bits
 RUN dnf install -y python3-pip
 RUN pip3 install --no-cache-dir dask==2023.3.1 distributed==2023.3.1
-

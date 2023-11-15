@@ -60,7 +60,8 @@ class DiracJob(Job):
 
         # public_address = get("https://ifconfig.me", timeout=30).content.decode("utf8")
         public_address = get("https://v4.ident.me/", timeout=30).content.decode("utf8")
-        singularity_args = f"exec --cleanenv docker://sameriksen/dask:python3.10.9 dask worker tcp://{public_address}:8786"
+        container = "docker://sameriksen/dask:centos9"
+        singularity_args = f"exec --cleanenv --bind /cvmfs:/cvmfs {container} dask worker tcp://{public_address}:8786"
         jdl_template = """
 JobName = "dask-dirac: dask worker";
 Executable = "singularity";
