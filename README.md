@@ -36,8 +36,35 @@ pip install dask-dirac
 
 # Acknowledgements
 <!-- readme: contributors -start -->
+<table>
+<tr>
+    <td align="center">
+        <a href="https://github.com/kreczko">
+            <img src="https://avatars.githubusercontent.com/u/1213276?v=4" width="100;" alt="kreczko"/>
+            <br />
+            <sub><b>Luke Kreczko</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/seriksen">
+            <img src="https://avatars.githubusercontent.com/u/5619270?v=4" width="100;" alt="seriksen"/>
+            <br />
+            <sub><b>Null</b></sub>
+        </a>
+    </td></tr>
+</table>
 <!-- readme: contributors -end -->
 
 ## Bots
 <!-- readme: bots -start -->
+<table>
+<tr>
+    <td align="center">
+        <a href="https://github.com/dependabot[bot]">
+            <img src="https://avatars.githubusercontent.com/in/29110?v=4" width="100;" alt="dependabot[bot]"/>
+            <br />
+            <sub><b>dependabot[bot]</b></sub>
+        </a>
+    </td></tr>
+</table>
 <!-- readme: bots -end -->
