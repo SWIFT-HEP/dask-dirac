@@ -35,4 +35,9 @@ pip install dask-dirac
 
 
 # Acknowledgements
-XXX
+<!-- readme: contributors -start -->
+<!-- readme: contributors -end -->
+
+## Bots
+<!-- readme: bots -start -->
+<!-- readme: bots -end -->
