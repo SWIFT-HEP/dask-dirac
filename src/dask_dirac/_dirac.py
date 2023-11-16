@@ -5,9 +5,13 @@ since we might want to move it to a standalone dirac client
 from __future__ import annotations
 
 import json
+import os
+import zlib
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Generator
 
+import _io
+import gfal2  # pylint: disable=import-error
 import requests
 
 
@@ -69,4 +73,103 @@ def whoami(settings: DiracSettings) -> Any:
     endpoint = "DataManagement/FileCatalog"
     settings.query_url = f"{settings.server_url}/{endpoint}"
     params = {"method": "whoami"}
+    return _query(settings, params)
+
+
+def get_directory_dump(settings: DiracSettings, lfns: str) -> Any:
+    """Get directory dump from DIRAC server"""
+    endpoint = "DataManagement/FileCatalog"
+    settings.query_url = f"{settings.server_url}/{endpoint}"
+    params = {"method": "getDirectoryDump", "args": json.dumps([lfns])}
+    return _query(settings, params)
+
+
+def create_directory(settings: DiracSettings, lfns: str) -> Any:
+    """Create directory on DIRAC server"""
+    endpoint = "DataManagement/FileCatalog"
+    settings.query_url = f"{settings.server_url}/{endpoint}"
+    params = {"method": "createDirectory", "args": json.dumps([lfns])}
+    return _query(settings, params)
+
+
+def remove_directory(settings: DiracSettings, lfns: str) -> Any:
+    """Remove directory on DIRAC server"""
+    endpoint = "DataManagement/FileCatalog"
+    settings.query_url = f"{settings.server_url}/{endpoint}"
+    params = {"method": "removeDirectory", "args": json.dumps([lfns])}
+    return _query(settings, params)
+
+
+def remove_file(settings: DiracSettings, lfns: str) -> Any:
+    """Remove file to directory on DIRAC server"""
+    endpoint = "DataManagement/FileCatalog"
+    settings.query_url = f"{settings.server_url}/{endpoint}"
+    params = {"method": "removeFile", "args": json.dumps([lfns])}
+    return _query(settings, params)
+
+
+def _adler32(file_path: str) -> str:
+    """Calculate adler32 checksum of the supplied file"""
+
+    def _read_chunk(
+        file_descriptor: _io.BufferedReader, size: int = 1048576
+    ) -> Generator[bytes, None, None]:
+        """Read a chunk of data from a file-like object"""
+        while True:
+            data = file_descriptor.read(size)
+            if not data:
+                break
+            yield data
+
+    with open(file_path, "rb") as input_file:
+        adler_decimal = 1
+        for data in _read_chunk(input_file):
+            adler_decimal = zlib.adler32(data, adler_decimal)
+
+    # change checksum from decimal to hex
+    adler_hex = (
+        hex(adler_decimal & 0xFFFFFFFF)
+        .lower()
+        .replace("l", "")
+        .replace("x", "0000")[-8:]
+    )
+
+    return adler_hex
+
+
+def add_file(
+    settings: DiracSettings, local_file: str, remote_file: str, overwrite: bool
+) -> Any:
+    """Add file to directory on DIRAC server"""
+    # example: https://github.com/cern-fts/gfal2-python/blob/develop/example/python/gfal2_copy.py
+    # For now put everything under swift-hep at RAL site
+    base_destination = "https://mover.pp.rl.ac.uk:2880/pnfs/pp.rl.ac.uk/data/gridpp/"
+
+    # upload the file to server
+    destination = f"{base_destination}{remote_file}"
+    source = f"file://{local_file}"
+    context = gfal2.creat_context()
+
+    params = context.transfer_parameters()
+
+    if overwrite:
+        params.overwrite = True
+
+    context.filecopy(params, source, destination)
+
+    # register file
+    endpoint = "DataManagement/FileCatalog"
+    settings.query_url = f"{settings.server_url}/{endpoint}"
+
+    lfns = {
+        remote_file: {
+            "PFN": remote_file,
+            "SE": "UKI-SOUTHGRID-RALPP-disk",
+            "Size": os.path.getsize(local_file),
+            "Checksum": _adler32(local_file),
+        }
+    }
+
+    params = {"method": "addFile", "args": json.dumps([lfns])}
+
     return _query(settings, params)

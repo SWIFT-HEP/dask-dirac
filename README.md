@@ -18,3 +18,21 @@
 [rtd-badge]:                https://readthedocs.org/projects/dask-dirac/badge/?version=latest
 [rtd-link]:                 https://dask-dirac.readthedocs.io/en/latest/?badge=latest
 [sk-badge]:                 https://scikit-hep.org/assets/images/Scikit--HEP-Project-blue.svg
+
+dask-dirac is a library for launching a [dask](https://www.dask.org/) cluster with (DIRAC)[https://dirac.readthedocs.io/en/latest/].
+
+# Installation
+
+dask-dirac can be installed [from PyPI](https://pypi.org/project/dask-dirac/) using pip.
+
+```bash
+pip install dask-dirac
+```
+
+# Requirements
+1. Open port on localhost (default is 8786). Required for scheduler
+2. DIRAC grid certificate
+
+
+# Acknowledgements
+XXX

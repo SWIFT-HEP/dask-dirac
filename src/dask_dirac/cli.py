@@ -87,6 +87,100 @@ def get_max_parametric_jobs(
 
 
 @app.command()
+def get_directory_dump(
+    server_url: str,  # "https://dirac.gridpp.ac.uk:8443"
+    lfns: str,  # "job.jdl"
+    capath: str = typer.Option(
+        default="/etc/grid-security/certificates",
+        help="path to CA certificate directory",
+    ),
+    user_proxy: str = typer.Option(
+        default="/tmp/x509up_u1000", help="path to user proxy"
+    ),
+) -> None:
+    """Print to contents of a directory"""
+    settings = _dirac.DiracSettings(server_url, capath, user_proxy)
+    result = _dirac.get_directory_dump(settings, lfns)
+    typer.echo(result)
+
+
+@app.command()
+def create_directory(
+    server_url: str,  # "https://dirac.gridpp.ac.uk:8443"
+    lfns: str,  # "job.jdl"
+    capath: str = typer.Option(
+        default="/etc/grid-security/certificates",
+        help="path to CA certificate directory",
+    ),
+    user_proxy: str = typer.Option(
+        default="/tmp/x509up_u1000", help="path to user proxy"
+    ),
+) -> None:
+    """Create a directory"""
+    settings = _dirac.DiracSettings(server_url, capath, user_proxy)
+    result = _dirac.create_directory(settings, lfns)
+    typer.echo(result)
+
+
+@app.command()
+def remove_directory(
+    server_url: str,  # "https://dirac.gridpp.ac.uk:8443"
+    lfns: str,  # "job.jdl"
+    capath: str = typer.Option(
+        default="/etc/grid-security/certificates",
+        help="path to CA certificate directory",
+    ),
+    user_proxy: str = typer.Option(
+        default="/tmp/x509up_u1000", help="path to user proxy"
+    ),
+) -> None:
+    """Remove a directory"""
+    settings = _dirac.DiracSettings(server_url, capath, user_proxy)
+    result = _dirac.remove_directory(settings, lfns)
+    typer.echo(result)
+
+
+@app.command()
+def remove_file(
+    server_url: str,
+    lfns: str,
+    capath: str = typer.Option(
+        default="/etc/grid-security/certificates",
+        help="path to CA certificate directory",
+    ),
+    user_proxy: str = typer.Option(
+        default="/tmp/x509up_u1000", help="path to user proxy"
+    ),
+) -> None:
+    """Remove a file"""
+
+    settings = _dirac.DiracSettings(server_url, capath, user_proxy)
+    result = _dirac.remove_file(settings, lfns)
+    typer.echo(result)
+
+
+@app.command()
+def add_file(
+    server_url: str,
+    local_file: str,
+    remote_file: str,
+    capath: str = typer.Option(
+        default="/etc/grid-security/certificates",
+        help="path to CA certificate directory",
+    ),
+    user_proxy: str = typer.Option(
+        default="/tmp/x509up_u1000", help="path to user proxy"
+    ),
+    overwrite: bool = typer.Option(default=False, help="overwrite existing file"),
+) -> None:
+    """Add a file"""
+
+    settings = _dirac.DiracSettings(server_url, capath, user_proxy)
+    result = _dirac.add_file(settings, local_file, remote_file, overwrite)
+    typer.echo(result)
+
+
+@app.command()
 def version() -> None:
     """Print the version number"""
     typer.echo(__version__)
