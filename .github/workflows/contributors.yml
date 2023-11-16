@@ -1,3 +1,5 @@
+name: 'Contributor List'
+
 on:
   push:
     branches:
