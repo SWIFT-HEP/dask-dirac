@@ -12,6 +12,8 @@ from dask_jobqueue.core import Job, JobQueueCluster, cluster_parameters, job_par
 from distributed.deploy.spec import ProcessInterface
 from requests import get
 
+from .templates import get_template
+
 logger = logging.getLogger(__name__)
 
 
@@ -62,29 +64,14 @@ class DiracJob(Job):
         public_address = get("https://v4.ident.me/", timeout=30).content.decode("utf8")
         container = "docker://sameriksen/dask:centos9"
         singularity_args = f"exec --cleanenv --bind /cvmfs:/cvmfs {container} dask worker tcp://{public_address}:8786"
-        jdl_template = """
-JobName = "dask-dirac: dask worker";
-Executable = "singularity";
-Arguments = \"{executable_args}\";
-StdOutput = "std.out";
-StdError = "std.err";
-OutputSandbox = {{"std.out","std.err"}};
-OwnerGroup = {owner};
-""".lstrip()
-        if dirac_site is not None:
-            singularity_args += _get_site_ports(dirac_site)
-            jdl_template += f"""
-Site = {dirac_site!r};
-""".lstrip().replace(
-                "'", '"'
-            )
+        jdl_template = get_template("jdl.j2")
+        rendered_jdl = jdl_template.render(
+            executable_args=singularity_args, owner=owner_group, dirac_site=dirac_site
+        )
 
         # Write JDL
         with open(jdl_file, mode="w", encoding="utf-8") as jdl:
-
-            jdl.write(
-                jdl_template.format(executable_args=singularity_args, owner=owner_group)
-            )
+            jdl.write(rendered_jdl)
 
         self.submit_command = (
             "dask-dirac submit "
