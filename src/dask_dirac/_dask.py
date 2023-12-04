@@ -56,25 +56,28 @@ class DiracJob(Job):
         public_address = get("https://v4.ident.me/", timeout=30).content.decode("utf8")
         container = "docker://sameriksen/dask:centos9"
         jdl_template = get_template("jdl.j2")
+
+        extra_args = _get_site_ports(dirac_site) if dirac_site else ""
+
         rendered_jdl = jdl_template.render(
             container=container,
             public_address=public_address,
             owner=owner_group,
             dirac_site=dirac_site,
+            extra_args=extra_args,
         )
 
         # Write JDL
         with open(jdl_file, mode="w", encoding="utf-8") as jdl:
             jdl.write(rendered_jdl)
 
-        self.submit_command = (
-            "dask-dirac submit "
-            + f"{submission_url} "
-            + f"{jdl_file} "
-            + f"--capath {cert_path} "
-            + f"--user-proxy {user_proxy} "
-            + "--dask-script "
-        )
+        cmd_template = get_template("submit_command.j2")
+        self.submit_command = cmd_template.render(
+            submission_url=submission_url,
+            jdl_file=jdl_file,
+            cert_path=cert_path,
+            user_proxy=user_proxy,
+        ).strip()
 
 
 class DiracCluster(JobQueueCluster):  # pylint: disable=missing-class-docstring
