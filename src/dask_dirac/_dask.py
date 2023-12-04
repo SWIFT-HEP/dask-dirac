@@ -24,6 +24,13 @@ def _get_site_ports(site: str) -> str:
     return " "  # None
 
 
+def _create_tmp_jdl_path() -> str:
+    return (
+        "/tmp/dask-dirac-JDL_"
+        + hashlib.sha1(getpass.getuser().encode("utf-8")).hexdigest()[:8]
+    )
+
+
 class DiracJob(Job):
     """Job class for Dirac"""
 
@@ -34,32 +41,17 @@ class DiracJob(Job):
         scheduler: Any = None,
         name: str | None = None,
         config_name: str | None = None,
-        submission_url: str | None = None,
-        user_proxy: str | None = None,
-        cert_path: str | None = None,
-        jdl_file: str | None = None,
-        owner_group: str | None = None,
+        submission_url: str = "https://lbcertifdirac70.cern.ch:8443",
+        user_proxy: str = "/tmp/x509up_u1000",
+        cert_path: str = "/etc/grid-security/certificates",
+        jdl_file: str = _create_tmp_jdl_path(),
+        owner_group: str = "dteam_user",
         dirac_site: str | None = None,
         **base_class_kwargs: dict[str, Any],
     ) -> None:
         super().__init__(
             scheduler=scheduler, name=name, config_name=config_name, **base_class_kwargs
         )
-
-        if submission_url is None:
-            submission_url = "https://lbcertifdirac70.cern.ch:8443"
-        if user_proxy is None:
-            user_proxy = "/tmp/x509up_u1000"
-        if jdl_file is None:
-            jdl_file = (
-                "/tmp/dask-dirac-JDL_"
-                + hashlib.sha1(getpass.getuser().encode("utf-8")).hexdigest()[:8]
-            )
-        if cert_path is None:
-            cert_path = "/etc/grid-security/certificates"
-        if owner_group is None:
-            owner_group = "dteam_user"
-
         # public_address = get("https://ifconfig.me", timeout=30).content.decode("utf8")
         public_address = get("https://v4.ident.me/", timeout=30).content.decode("utf8")
         container = "docker://sameriksen/dask:centos9"
