@@ -41,7 +41,7 @@ class DiracJob(Job):
         scheduler: Any = None,
         name: str | None = None,
         config_name: str | None = None,
-        submission_url: str = "https://lbcertifdirac70.cern.ch:8443",
+        submission_url: str = "https://diracdev.grid.hep.ph.ic.ac.uk:8444",
         user_proxy: str = "/tmp/x509up_u1000",
         cert_path: str = "/etc/grid-security/certificates",
         jdl_file: str = _create_tmp_jdl_path(),
