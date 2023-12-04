@@ -13,6 +13,8 @@ def jinja_env():
 def test_jdl_template_rendering(jinja_env):
     # Prepare test data
     test_executable_args = "test_args"
+    test_container = "python:3.11"
+    test_public_address = "127.0.0.1"
     test_owner_group = "test_group"
     test_dirac_site = "test_site"
 
@@ -21,13 +23,15 @@ def test_jdl_template_rendering(jinja_env):
 
     # Render the template
     result = template.render(
-        executable_args=test_executable_args,
+        container=test_container,
+        public_address=test_public_address,
         owner=test_owner_group,
         dirac_site=test_dirac_site,
     )
 
     # Assertions
-    assert 'Arguments = "test_args"' in result
+    assert test_container in result
+    assert test_public_address in result
     assert "OwnerGroup = test_group" in result
     assert 'Site = "test_site"' in result
 
