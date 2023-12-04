@@ -17,8 +17,8 @@ from .templates import get_template
 logger = logging.getLogger(__name__)
 
 
-def _get_site_ports(site: str) -> str:
-    if site == "LCG.UKI-SOUTHGRID-RALPP.uk":
+def _get_site_ports(sites: list[str]) -> str:
+    if "LCG.UKI-SOUTHGRID-RALPP.uk" in sites:
         return " --worker-port 50000:52000"
 
     return " "  # None
@@ -46,7 +46,7 @@ class DiracJob(Job):
         cert_path: str = "/etc/grid-security/certificates",
         jdl_file: str = _create_tmp_jdl_path(),
         owner_group: str = "dteam_user",
-        dirac_site: str | None = None,
+        dirac_sites: list[str] | None = None,
         **base_class_kwargs: dict[str, Any],
     ) -> None:
         super().__init__(
@@ -57,13 +57,13 @@ class DiracJob(Job):
         container = "docker://sameriksen/dask:centos9"
         jdl_template = get_template("jdl.j2")
 
-        extra_args = _get_site_ports(dirac_site) if dirac_site else ""
+        extra_args = _get_site_ports(dirac_sites) if dirac_sites else ""
 
         rendered_jdl = jdl_template.render(
             container=container,
             public_address=public_address,
             owner=owner_group,
-            dirac_site=dirac_site,
+            dirac_sites=dirac_sites,
             extra_args=extra_args,
         )
 

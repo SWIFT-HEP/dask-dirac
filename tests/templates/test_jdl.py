@@ -16,7 +16,7 @@ def test_jdl_template_rendering(jinja_env):
     test_container = "python:3.11"
     test_public_address = "127.0.0.1"
     test_owner_group = "test_group"
-    test_dirac_site = "test_site"
+    test_dirac_sites = ["test_site1", "test_site2"]
 
     # Load the template
     template = jinja_env.get_template("jdl.j2")
@@ -26,14 +26,14 @@ def test_jdl_template_rendering(jinja_env):
         container=test_container,
         public_address=test_public_address,
         owner=test_owner_group,
-        dirac_site=test_dirac_site,
+        dirac_sites=test_dirac_sites,
     )
 
     # Assertions
     assert test_container in result
     assert test_public_address in result
     assert "OwnerGroup = test_group" in result
-    assert 'Site = "test_site"' in result
+    assert 'Site = "test_site1, test_site2"' in result
 
     # Test without dirac_site
     result_no_site = template.render(

@@ -6,6 +6,6 @@ StdError = "std.err";
 OutputSandbox = {"std.out","std.err"};
 OwnerGroup = {{ owner }};
 
-{% if dirac_site %}
-Site = "{{ dirac_site }}";
+{% if dirac_sites %}
+Site = "{{ dirac_sites | join(', ') }}";
 {% endif %}
