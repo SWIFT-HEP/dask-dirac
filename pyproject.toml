@@ -39,6 +39,7 @@ dynamic = ["version"]
 dependencies = [
     "dask",
     "dask_jobqueue",
+    "jinja2",
     "requests",
     "typer",
 ]

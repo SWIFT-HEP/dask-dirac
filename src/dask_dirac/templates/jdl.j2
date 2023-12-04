@@ -1,0 +1,11 @@
+JobName = "dask-dirac: dask worker";
+Executable = "singularity";
+Arguments = "{{ executable_args }}";
+StdOutput = "std.out";
+StdError = "std.err";
+OutputSandbox = {"std.out","std.err"};
+OwnerGroup = {{ owner }};
+
+{% if dirac_site %}
+Site = "{{ dirac_site }}";
+{% endif %}
