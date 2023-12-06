@@ -1,0 +1,11 @@
+JobName = "dask-dirac: dask worker";
+Executable = "singularity";
+Arguments = "exec --cleanenv --bind /cvmfs:/cvmfs {{ container }} dask worker tcp://{{ public_address }}:8786 {% if extra_args -%}{{extra_args}}{%endif -%}";
+StdOutput = "std.out";
+StdError = "std.err";
+OutputSandbox = {"std.out","std.err"};
+OwnerGroup = {{ owner }};
+
+{% if dirac_sites %}
+Site = "{{ dirac_sites | join(', ') }}";
+{% endif %}

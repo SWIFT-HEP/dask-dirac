@@ -12,14 +12,23 @@ from dask_jobqueue.core import Job, JobQueueCluster, cluster_parameters, job_par
 from distributed.deploy.spec import ProcessInterface
 from requests import get
 
+from .templates import get_template
+
 logger = logging.getLogger(__name__)
 
 
-def _get_site_ports(site: str) -> str:
-    if site == "LCG.UKI-SOUTHGRID-RALPP.uk":
+def _get_site_ports(sites: list[str]) -> str:
+    if "LCG.UKI-SOUTHGRID-RALPP.uk" in sites:
         return " --worker-port 50000:52000"
 
     return " "  # None
+
+
+def _create_tmp_jdl_path() -> str:
+    return (
+        "/tmp/dask-dirac-JDL_"
+        + hashlib.sha1(getpass.getuser().encode("utf-8")).hexdigest()[:8]
+    )
 
 
 class DiracJob(Job):
@@ -32,68 +41,43 @@ class DiracJob(Job):
         scheduler: Any = None,
         name: str | None = None,
         config_name: str | None = None,
-        submission_url: str | None = None,
-        user_proxy: str | None = None,
-        cert_path: str | None = None,
-        jdl_file: str | None = None,
-        owner_group: str | None = None,
-        dirac_site: str | None = None,
+        submission_url: str = "https://diracdev.grid.hep.ph.ic.ac.uk:8444",
+        user_proxy: str = "/tmp/x509up_u1000",
+        cert_path: str = "/etc/grid-security/certificates",
+        jdl_file: str = _create_tmp_jdl_path(),
+        owner_group: str = "dteam_user",
+        dirac_sites: list[str] | None = None,
         **base_class_kwargs: dict[str, Any],
     ) -> None:
         super().__init__(
             scheduler=scheduler, name=name, config_name=config_name, **base_class_kwargs
         )
-
-        if submission_url is None:
-            submission_url = "https://lbcertifdirac70.cern.ch:8443"
-        if user_proxy is None:
-            user_proxy = "/tmp/x509up_u1000"
-        if jdl_file is None:
-            jdl_file = (
-                "/tmp/dask-dirac-JDL_"
-                + hashlib.sha1(getpass.getuser().encode("utf-8")).hexdigest()[:8]
-            )
-        if cert_path is None:
-            cert_path = "/etc/grid-security/certificates"
-        if owner_group is None:
-            owner_group = "dteam_user"
-
         # public_address = get("https://ifconfig.me", timeout=30).content.decode("utf8")
         public_address = get("https://v4.ident.me/", timeout=30).content.decode("utf8")
         container = "docker://sameriksen/dask:centos9"
-        singularity_args = f"exec --cleanenv --bind /cvmfs:/cvmfs {container} dask worker tcp://{public_address}:8786"
-        jdl_template = """
-JobName = "dask-dirac: dask worker";
-Executable = "singularity";
-Arguments = \"{executable_args}\";
-StdOutput = "std.out";
-StdError = "std.err";
-OutputSandbox = {{"std.out","std.err"}};
-OwnerGroup = {owner};
-""".lstrip()
-        if dirac_site is not None:
-            singularity_args += _get_site_ports(dirac_site)
-            jdl_template += f"""
-Site = {dirac_site!r};
-""".lstrip().replace(
-                "'", '"'
-            )
+        jdl_template = get_template("jdl.j2")
+
+        extra_args = _get_site_ports(dirac_sites) if dirac_sites else ""
+
+        rendered_jdl = jdl_template.render(
+            container=container,
+            public_address=public_address,
+            owner=owner_group,
+            dirac_sites=dirac_sites,
+            extra_args=extra_args,
+        )
 
         # Write JDL
         with open(jdl_file, mode="w", encoding="utf-8") as jdl:
+            jdl.write(rendered_jdl)
 
-            jdl.write(
-                jdl_template.format(executable_args=singularity_args, owner=owner_group)
-            )
-
-        self.submit_command = (
-            "dask-dirac submit "
-            + f"{submission_url} "
-            + f"{jdl_file} "
-            + f"--capath {cert_path} "
-            + f"--user-proxy {user_proxy} "
-            + "--dask-script "
-        )
+        cmd_template = get_template("submit_command.j2")
+        self.submit_command = cmd_template.render(
+            submission_url=submission_url,
+            jdl_file=jdl_file,
+            cert_path=cert_path,
+            user_proxy=user_proxy,
+        ).strip()
 
 
 class DiracCluster(JobQueueCluster):  # pylint: disable=missing-class-docstring
