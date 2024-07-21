@@ -31,6 +31,29 @@ def _create_tmp_jdl_path() -> str:
     )
 
 
+def _get_graph_hash(graph: Any) -> str:
+
+    total_graph_description = []
+    for i, (layer_name, layer) in enumerate(graph.layers.items()):
+        short_layer_name = layer_name[: layer_name.rfind("-")]
+        _, task = next(iter(layer.items()))
+        # function = task[0]
+        task_args = task[1:]
+        if i == 0:
+            layer_args = task_args[0]
+        else:
+            layer_args = task_args[1]
+
+        layer_description = {
+            "function:": short_layer_name,
+            "layer_length": len(layer.items()),
+            "layer_args": layer_args,
+        }
+        total_graph_description.append(layer_description)
+
+    return hashlib.sha3_384(str(total_graph_description).encode("utf-8")).hexdigest()
+
+
 class DiracJob(Job):
     """Job class for Dirac"""
 
