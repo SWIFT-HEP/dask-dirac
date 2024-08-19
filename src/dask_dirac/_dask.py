@@ -31,27 +31,55 @@ def _create_tmp_jdl_path() -> str:
     )
 
 
-def _get_graph_hash(graph: Any) -> str:
-
-    total_graph_description = []
-    for i, (layer_name, layer) in enumerate(graph.layers.items()):
-        short_layer_name = layer_name[: layer_name.rfind("-")]
-        _, task = next(iter(layer.items()))
-        # function = task[0]
-        task_args = task[1:]
-        if i == 0:
-            layer_args = task_args[0]
+def _generate_hash_from_value(value: tuple | str) -> tuple:
+    if isinstance(value, tuple):
+        left = value[0]
+        right = value[1]
+        
+        if callable(left):
+            left_name = left.__name__
         else:
-            layer_args = task_args[1]
+            left_name = str(left)
 
-        layer_description = {
-            "function:": short_layer_name,
-            "layer_length": len(layer.items()),
-            "layer_args": layer_args,
-        }
-        total_graph_description.append(layer_description)
+        if isinstance(right, tuple):
+            right_hash, this_tuple = _generate_hash_from_value(right)
+        else:
+            if callable(right):
+                right_name = right.__name__
+            else:
+                right_name = str(right)
+            right_hash = right_name
 
-    return hashlib.sha3_384(str(total_graph_description).encode("utf-8")).hexdigest()
+        # Combine the names/hashes
+        combined = left_name + right_hash
+        hash = hashlib.sha3_384(combined.encode()).hexdigest()
+        if "this_tuple" in locals():
+            hash_tuple = (hash, this_tuple)
+        else:
+            hash_tuple = hash
+        return hash, hash_tuple
+
+    return str(value), str(value)
+
+
+def _replace_hashed_functions(func_tuple: tuple, hash_tuple: tuple) -> tuple:
+    global hash_list
+    if isinstance(hash_tuple, tuple) and isinstance(func_tuple, tuple):
+        current_hash, nested_hash = hash_tuple
+        current_func, nested_func = func_tuple
+
+        if current_hash in hash_list:
+            return (load_,)
+        else:
+            # Recursively process the nested tuple
+            modified_nested_func = _replace_hashed_functions(nested_func, nested_hash)
+            return (current_func, modified_nested_func)
+    else:
+        # Base case: No more nested tuples
+        if hash_tuple in hash_list:
+            return (load_,)
+        else:
+            return func_tuple
 
 
 class DiracJob(Job):
