@@ -166,47 +166,16 @@ def generate_hash_from_value(value):
     # should in theory never reach here
     return str(value), str(value)
 
-def check_functions_and_hashes(func_tuple, hash_tuple):
-    logging.debug(f'Checking func_tuple: {func_tuple}')
-    logging.debug(f'Checking hash_tuple: {hash_tuple}')
-    cached_files = glob.glob('/users/ak18773/SWIFT_HEP/dask-dirac/examples/notebooks/data/*.npy')
-    cached_files = [c[c.rfind('/')+1:-4] for c in cached_files]
-
-    if len(func_tuple) > 2:
-        if hash_tuple[0] in cached_files:
-            return (func_load, hash_tuple[0])
-        else:
-            return (func_save, hash_tuple[0], (func_tuple))
-
-    # Get to the deepest level and replace
-    
-    if isinstance(hash_tuple, tuple) and isinstance(func_tuple, tuple):
-        current_hash, nested_hash = hash_tuple
-        current_func, nested_func = func_tuple
-
-        if current_hash in cached_files:
-            return (func_load, current_hash)
-        else:
-            # Recursively process the nested tuple
-            modified_nested_func = check_functions_and_hashes(nested_func, nested_hash)
-            return (func_save, current_hash, (current_func, modified_nested_func))
-    else:
-        # Base case: No more nested tuples
-        if hash_tuple in cached_files:
-            return (func_load, hash_tuple)
-        else:
-            return (func_save, hash_tuple, (func_tuple))
-
 
 def modified_graph_to_futures(dsk, *args, **kwargs):
     c = datetime.now()
     logging.debug("Inside modified_graph_to_futures. Time = " + c.strftime("%H:%M:%S"))
     if not isinstance(dsk, HighLevelGraph):
-        print(f"Converted to HighLevelGraph")
+        logging.debug(f"Converted to HighLevelGraph")
         dsk = HighLevelGraph.from_collections(id(dsk), dsk, dependencies=dict())
 
     info = dsk.to_dict()
-    logging.debug(f"{info}")
+    logging.debug(info)
     logging.debug("---------")
     key_list = info.keys()
     sorted_keys = dask.core.toposort(info)
@@ -277,25 +246,66 @@ def modified_graph_to_futures(dsk, *args, **kwargs):
     logging.debug(tmp_2)
 
     dsk = HighLevelGraph.from_collections(id(tmp_2), tmp_2, dependencies=dict())
-    logging.debug("---------")
     logging.debug(dsk.to_dict())   
 
     return original_graph_to_futures(dsk, *args, **kwargs)
 
 
+def check_functions_and_hashes(func_tuple, hash_tuple):
+    logging.debug(f'Checking func_tuple: {func_tuple}')
+    logging.debug(f'Checking hash_tuple: {hash_tuple}')
+    cached_files = glob.glob(cache_location + '/*.parquet')
+    cached_files = [c[c.rfind('/')+1:-4] for c in cached_files]
+
+    if len(func_tuple) > 2:
+        print('Need to think about how to do this, but for now just check first hash')
+        if hash_tuple[0] in cached_files:
+            return (load_from_parquet, hash_tuple[0])
+        else:
+            return (save_to_parquet, hash_tuple[0], (func_tuple))
+
+    # Get to the deepest level and replace
+    
+    if isinstance(hash_tuple, tuple) and isinstance(func_tuple, tuple):
+        current_hash, nested_hash = hash_tuple
+        current_func, nested_func = func_tuple
+
+        if current_hash in cached_files:
+            return (load_from_parquet, current_hash)
+        else:
+            # Recursively process the nested tuple
+            modified_nested_func = check_functions_and_hashes(nested_func, nested_hash)
+            return (save_to_parquet, current_hash, (current_func, modified_nested_func))
+    else:
+        # Base case: No more nested tuples
+        if hash_tuple in cached_files:
+            return (load_from_parquet, hash_tuple)
+        else:
+            return (save_to_parquet, hash_tuple, (func_tuple))
+
+
 def get_client(cluster: JobQueueCluster) -> Client:
     """Create a Dask client connected to the specified cluster."""
     client =  Client(cluster)
+    # Ensure original_graph_to_futures is replaced
+    # global original_graph_to_futures
     original_graph_to_futures = client._graph_to_futures
     client._graph_to_futures = modified_graph_to_futures
+    print('Remember to set cache_location before submitting anything.')
+
     return client
 
 
-def save_to_parquet(data, filename: str): 
+def save_to_parquet(filename: str, data: pd.DataFrame) -> pd.DataFrame:
     """Save data to Parquet file."""
-    data.to_parquet(filename)
+    name = cache_location + '/' + filename + '.parquet'
+    # ensure dataframe columns have names
+    if not all(isinstance(col, str) for col in data.columns):
+        data.columns = [f'col_{i}' for i in range(data.shape[1])]
+    data.to_parquet(name)
     return data
 
 def load_from_parquet(filename: str) -> pd.DataFrame: 
     """Load data from Parquet file."""
-    return pd.read_parquet(filename)
+    name = cache_location + '/' + filename + '.parquet'
+    return pd.read_parquet(name)
