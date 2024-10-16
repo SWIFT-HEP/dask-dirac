@@ -16,13 +16,13 @@ JDLs
 ----
 
 JDL-1
-- submit `/bin/ls` job
+- submit :code:`/bin/ls` job
 
 JDL-2
-- submit `/bin/ls` job to a defined Site
+- submit :code:`/bin/ls` job to a defined Site
 
 JDL-3
-- submit `singularity` job to run `docker hello-world`
+- submit :code:`singularity` job to run :code:`docker hello-world`
 
 JDL-4
-- submit `singularity` job to run dask docker container (debian)
+- submit :code:`singularity` job to run dask docker container (debian)

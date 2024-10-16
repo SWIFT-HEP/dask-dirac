@@ -77,6 +77,7 @@ repos:
   hooks:
   - id: codespell
     exclude: docker/conda/environment.yaml
+    args: ["--skip=examples/notebooks/*"]
 
 - repo: https://github.com/shellcheck-py/shellcheck-py
   rev: v0.8.0.4
