@@ -236,7 +236,7 @@ def check_functions_and_hashes(func_tuple: Any, hash_tuple: Any) -> Any:
             return (save_to_parquet, hash_tuple, (func_tuple))
 
 
-def generate_hash_from_value(value: Callable | tuple[Callable, Any]) -> tuple[str, str]:
+def generate_hash_from_value(value: tuple[Callable[..., Any]]) -> tuple[str, Any]:
     if isinstance(value, tuple):
 
         # Catch when there is no left and right as at end of chain
@@ -278,6 +278,7 @@ def generate_hash_from_value(value: Callable | tuple[Callable, Any]) -> tuple[st
         # Combine the names/hashes for final hash
         combined = left_name + right_hash
         final_hash = hashlib.sha3_384(combined.encode()).hexdigest()
+        # TODO: Integrate with DiracClient
         if "this_tuple" in locals():
             hash_tuple = (final_hash, this_tuple)
         else:
@@ -308,5 +309,6 @@ def save_to_parquet(filename: str, data: pd.DataFrame) -> pd.DataFrame:
 def load_from_parquet(filename: str) -> pd.DataFrame:
     """Load data from Parquet file."""
     global cache_location
+    # TODO: Move cache location to DiracClient?
     name = cache_location + "/" + filename + ".parquet"
     return pd.read_parquet(name)
