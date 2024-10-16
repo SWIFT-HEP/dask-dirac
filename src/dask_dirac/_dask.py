@@ -113,147 +113,91 @@ class DiracCluster(JobQueueCluster):  # pylint: disable=missing-class-docstring
         return super().from_name(name)
 
 
-def generate_hash_from_value(value):
-    if isinstance(value, tuple):
+class DiracClient(Client):
+     """Client for caching dask computations"""
 
-        # Catch when there is no left and right as at end of chain
-        if len(value) == 1:
-            left = value[0]
-            right = ""
-        else:
-            left = value[0]
-            right = value[1:]
-            if len(right) == 1:
-                right = right[0]
+     def _graph_to_futures(self, dsk, *args, **kwargs):
+        if not isinstance(dsk, HighLevelGraph):
+            dsk = HighLevelGraph.from_collections(id(dsk), dsk, dependencies=dict())
 
-        logging.debug(f'left: {left}')
-        logging.debug(f'right: {right}')
+        info = dsk.to_dict()
+        logging.debug(f'Input dask graph:\n{info}\n---------\nperforming caching checks\n---------')
 
-        # Process left side
-        if callable(left):
-            left_name = left.__name__
-        else:
-            left_name = str(left)
+        sorted_keys = dask.core.toposort(info)
+        tmp_info = {}
+        for key in sorted_keys:
+            value = info[key]
+            hash_tuple = None
+            hash_base = None
+            value_for_hash = value
+            check_layer = True
+            logging.debug(f"Key: {key}, Value: {value}")
+            logging.debug(f'Checking if tmp_keys: {tmp_info.keys()}, are in {value}')
+            for t_key in tmp_info.keys():
+                try:
+                    if t_key in value:
+                        logging.debug(f'Found!')
+                        logging.debug(f'{t_key} in {value}')
+                        index = value.index(t_key)
+                        
+                        hash_base = tmp_info[t_key]['hash'] #[index]
+                        temp_list = list(value_for_hash)
+                        temp_list[index] = (hash_base)
+                        value_for_hash = tuple(temp_list)
+                        logging.debug(hash_base)
+                        logging.debug(value_for_hash)
+                        logging.debug(index)
+                    elif t_key == value:
+                        logging.debug(f'Found!')
+                        logging.debug(f'{t_key} in {value}')
+                        hash_base = tmp_info[t_key]['hash'][0]
+                        check_layer = False
+                        hash_tuple = hash_base
+                except: # ignore problem for now
+                    continue
 
-        # Process right side
-        if isinstance(right, tuple):
-            logging.debug('rerunning function')
-            logging.debug(f'left: {left}')
-            logging.debug(f'right: {right}')
-            right_hash, this_tuple = generate_hash_from_value(right)
-        else:
-            if callable(right):
-                right_name = right.__name__
+            if hash_tuple is None:
+                # Now we have the hash_base, 
+                _, hash_tuple = generate_hash_from_value(value_for_hash)
+
+            tmp_info[key] = {'value': value,
+                            'hash': hash_tuple,
+                            'check_layer': check_layer
+                            }
+
+        logging.debug(f'---------\nHashes: {tmp_info}\n---------')
+
+        # Now check layers that need to be checked, adding caching
+        tmp_2 = {}
+        for key in tmp_info.keys():
+            logging.debug(f'Checking {key}... ')
+            # Now we check if hash exist at some location
+            input_func_tuple = tmp_info[key]['value']
+            input_hash_tuple = tmp_info[key]['hash']
+            if not tmp_info[key]['check_layer']:
+                logging.debug(f'Not processing layer')
+                tmp_2[key] = input_func_tuple
             else:
-                right_name = str(right)
-            right_hash = right_name
+                func_tuple = check_functions_and_hashes(input_func_tuple, input_hash_tuple)
+                tmp_2[key] = func_tuple
 
-        # Combine the names/hashes for final hash
-        combined = left_name + right_hash
-        final_hash = hashlib.sha3_384(combined.encode()).hexdigest()
-        if "this_tuple" in locals():
-            hash_tuple = (final_hash, this_tuple)
-        else:
-            hash_tuple = final_hash
+            logging.debug(f'final_function_tuple')
+            logging.debug(f'{func_tuple}')
 
-        logging.debug(f"hash inputs: {value}")
-        logging.debug(f"hash inputs: {left_name} + {right_hash}")
-        logging.debug(f"hash: {final_hash}")
-        logging.debug(f"hash tuple: {hash_tuple}")
+        logging.debug(f'---------\nFinalized graph: {tmp_2}\n---------')
 
-        return final_hash, hash_tuple
+        dsk = HighLevelGraph.from_collections(id(tmp_2), tmp_2, dependencies=dict())
+        
+        logging.debug(f'---------\nFinalized High Level Graph: {dsk.to_dict()}\n---------')
 
-    # should in theory never reach here
-    return str(value), str(value)
+        return super()._graph_to_futures(dsk, *args, **kwargs)
 
-
-def modified_graph_to_futures(dsk, *args, **kwargs):
-    c = datetime.now()
-    logging.debug("Inside modified_graph_to_futures. Time = " + c.strftime("%H:%M:%S"))
-    if not isinstance(dsk, HighLevelGraph):
-        logging.debug(f"Converted to HighLevelGraph")
-        dsk = HighLevelGraph.from_collections(id(dsk), dsk, dependencies=dict())
-
-    info = dsk.to_dict()
-    logging.debug(info)
-    logging.debug("---------")
-    key_list = info.keys()
-    sorted_keys = dask.core.toposort(info)
-    logging.debug('Processing keys in defined order')
-    logging.debug(f'original list order: {key_list}')
-    logging.debug(f'sorted key order: {sorted_keys}')    
-    logging.debug("---------")
-    logging.debug('Looping over keys and calculating hashes')
-    tmp_info = {}
-    for key in sorted_keys:
-        value = info[key]
-        hash_tuple = None
-        hash_base = None
-        value_for_hash = value
-        check_layer = True
-        logging.debug(f"Key: {key}, Value: {value}")
-        logging.debug(f'Checking if tmp_keys: {tmp_info.keys()}, are in {value}')
-        for t_key in tmp_info.keys():
-            if t_key in value:
-                logging.debug(f'Found!')
-                logging.debug(f'{t_key} in {value}')
-                index = value.index(t_key)
-                
-                hash_base = tmp_info[t_key]['hash'] #[index]
-                temp_list = list(value_for_hash)
-                temp_list[index] = (hash_base)
-                value_for_hash = tuple(temp_list)
-                logging.debug(hash_base)
-                logging.debug(value_for_hash)
-                logging.debug(index)
-            elif t_key == value:
-                logging.debug(f'Found!')
-                logging.debug(f'{t_key} in {value}')
-                hash_base = tmp_info[t_key]['hash'][0]
-                check_layer = False
-                hash_tuple = hash_base
-
-        if hash_tuple is None:
-            # Now we have the hash_base, 
-            _, hash_tuple = generate_hash_from_value(value_for_hash)
-
-        tmp_info[key] = {'value': value,
-                         'hash': hash_tuple,
-                         'check_layer': check_layer
-                        }
-
-        print("---------")
-
-    logging.debug(tmp_info)
-
-    # Now check layers that need to be checked, adding caching
-    tmp_2 = {}
-    for key in tmp_info.keys():
-        logging.debug(f'Checking {key}... ')
-        # Now we check if hash exist at some location
-        input_func_tuple = tmp_info[key]['value']
-        input_hash_tuple = tmp_info[key]['hash']
-        if not tmp_info[key]['check_layer']:
-            logging.debug(f'Not processing layer')
-            tmp_2[key] = input_func_tuple
-        else:
-            func_tuple = check_functions_and_hashes(input_func_tuple, input_hash_tuple)
-            tmp_2[key] = func_tuple
-
-        logging.debug(f'final_function_tuple')
-        logging.debug(f'{func_tuple}')
-
-    logging.debug(tmp_2)
-
-    dsk = HighLevelGraph.from_collections(id(tmp_2), tmp_2, dependencies=dict())
-    logging.debug(dsk.to_dict())   
-
-    return original_graph_to_futures(dsk, *args, **kwargs)
 
 
 def check_functions_and_hashes(func_tuple, hash_tuple):
-    logging.debug(f'Checking func_tuple: {func_tuple}')
-    logging.debug(f'Checking hash_tuple: {hash_tuple}')
+    print(f'Checking func_tuple: {func_tuple}')
+    print(f'Checking hash_tuple: {hash_tuple}')
+    global cache_location
     cached_files = glob.glob(cache_location + '/*.parquet')
     cached_files = [c[c.rfind('/')+1:-4] for c in cached_files]
 
@@ -265,7 +209,6 @@ def check_functions_and_hashes(func_tuple, hash_tuple):
             return (save_to_parquet, hash_tuple[0], (func_tuple))
 
     # Get to the deepest level and replace
-    
     if isinstance(hash_tuple, tuple) and isinstance(func_tuple, tuple):
         current_hash, nested_hash = hash_tuple
         current_func, nested_func = func_tuple
@@ -282,30 +225,79 @@ def check_functions_and_hashes(func_tuple, hash_tuple):
             return (load_from_parquet, hash_tuple)
         else:
             return (save_to_parquet, hash_tuple, (func_tuple))
+        
+
+def generate_hash_from_value(value):
+    if isinstance(value, tuple):
+
+        # Catch when there is no left and right as at end of chain
+        if len(value) == 1:
+            left = value[0]
+            right = ""
+        else:
+            left = value[0]
+            right = value[1:]
+            if len(right) == 1:
+                right = right[0]
+
+        print(f'left: {left}')
+        print(f'right: {right}')
+
+        # Process left side
+        if callable(left):
+            try:
+                left_name = left.__name__
+            except: # Lets assume it's functools.partial for now
+                left_name = type(left).__name__
+        else:
+            left_name = str(left)
+
+        # Process right side
+        if isinstance(right, tuple):
+            print('rerunning function')
+            print(f'left: {left}')
+            print(f'right: {right}')
+            right_hash, this_tuple = generate_hash_from_value(right)
+        else:
+            if callable(right):
+                try:
+                    right_name = right.__name__
+                except: # lets just assume it's FileMeta for now
+                    right_name = right.file
+            else:
+                right_name = str(right)
+            right_hash = right_name
+
+        # Combine the names/hashes for final hash
+        combined = left_name + right_hash
+        final_hash = hashlib.sha3_384(combined.encode()).hexdigest()
+        if "this_tuple" in locals():
+            hash_tuple = (final_hash, this_tuple)
+        else:
+            hash_tuple = final_hash
+
+        print(f"hash inputs: {value}")
+        print(f"hash inputs: {left_name} + {right_hash}")
+        print(f"hash: {final_hash}")
+        print(f"hash tuple: {hash_tuple}")
+
+        return final_hash, hash_tuple
+
+    # should in theory never reach here
+    return str(value), str(value)
 
 
-def get_client(cluster: JobQueueCluster) -> Client:
-    """Create a Dask client connected to the specified cluster."""
-    client =  Client(cluster)
-    # Ensure original_graph_to_futures is replaced
-    # global original_graph_to_futures
-    original_graph_to_futures = client._graph_to_futures
-    client._graph_to_futures = modified_graph_to_futures
-    print('Remember to set cache_location before submitting anything.')
-
-    return client
-
-
-def save_to_parquet(filename: str, data: pd.DataFrame) -> pd.DataFrame:
+def save_to_parquet(filename, data):
     """Save data to Parquet file."""
+    global cache_location
     name = cache_location + '/' + filename + '.parquet'
-    # ensure dataframe columns have names
-    if not all(isinstance(col, str) for col in data.columns):
-        data.columns = [f'col_{i}' for i in range(data.shape[1])]
-    data.to_parquet(name)
+
+    # TODO: Implement caching logic here
+
     return data
 
 def load_from_parquet(filename: str) -> pd.DataFrame: 
     """Load data from Parquet file."""
+    global cache_location
     name = cache_location + '/' + filename + '.parquet'
     return pd.read_parquet(name)
