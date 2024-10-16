@@ -7,7 +7,6 @@ import getpass
 import glob
 import hashlib
 import logging
-from datetime import datetime
 from typing import Any
 
 import dask.core
@@ -138,8 +137,7 @@ class DiracClient(Client):
             for t_key in tmp_info.keys():
                 try:
                     if t_key in value:
-                        logging.debug(f"Found!")
-                        logging.debug(f"{t_key} in {value}")
+                        logging.debug(f"Found {t_key} in {value}")
                         index = value.index(t_key)
 
                         hash_base = tmp_info[t_key]["hash"]  # [index]
@@ -150,12 +148,11 @@ class DiracClient(Client):
                         logging.debug(value_for_hash)
                         logging.debug(index)
                     elif t_key == value:
-                        logging.debug(f"Found!")
-                        logging.debug(f"{t_key} in {value}")
+                        logging.debug(f"Found {t_key} in {value}")
                         hash_base = tmp_info[t_key]["hash"][0]
                         check_layer = False
                         hash_tuple = hash_base
-                except:  # ignore problem for now
+                except BaseException:  # ignore problem for now
                     continue
 
             if hash_tuple is None:
@@ -178,7 +175,7 @@ class DiracClient(Client):
             input_func_tuple = tmp_info[key]["value"]
             input_hash_tuple = tmp_info[key]["hash"]
             if not tmp_info[key]["check_layer"]:
-                logging.debug(f"Not processing layer")
+                logging.debug("Not processing layer")
                 tmp_2[key] = input_func_tuple
             else:
                 func_tuple = check_functions_and_hashes(
@@ -186,8 +183,7 @@ class DiracClient(Client):
                 )
                 tmp_2[key] = func_tuple
 
-            logging.debug(f"final_function_tuple")
-            logging.debug(f"{func_tuple}")
+            logging.debug(f"final_function_tuple:\n{func_tuple}")
 
         logging.debug(f"---------\nFinalized graph: {tmp_2}\n---------")
 
@@ -201,14 +197,16 @@ class DiracClient(Client):
 
 
 def check_functions_and_hashes(func_tuple, hash_tuple):
-    print(f"Checking func_tuple: {func_tuple}")
-    print(f"Checking hash_tuple: {hash_tuple}")
+    logging.debug(f"Checking func_tuple: {func_tuple}")
+    logging.debug(f"Checking hash_tuple: {hash_tuple}")
     global cache_location
     cached_files = glob.glob(cache_location + "/*.parquet")
     cached_files = [c[c.rfind("/") + 1 : -4] for c in cached_files]
 
     if len(func_tuple) > 2:
-        print("Need to think about how to do this, but for now just check first hash")
+        logging.debug(
+            "Need to think about how to do this, but for now just check first hash"
+        )
         if hash_tuple[0] in cached_files:
             return (load_from_parquet, hash_tuple[0])
         else:
@@ -246,29 +244,27 @@ def generate_hash_from_value(value):
             if len(right) == 1:
                 right = right[0]
 
-        print(f"left: {left}")
-        print(f"right: {right}")
+        logging.debug(f"left: {left}")
+        logging.debug(f"right: {right}")
 
         # Process left side
         if callable(left):
             try:
                 left_name = left.__name__
-            except:  # Lets assume it's functools.partial for now
+            except BaseException:  # Lets assume it's functools.partial for now
                 left_name = type(left).__name__
         else:
             left_name = str(left)
 
         # Process right side
         if isinstance(right, tuple):
-            print("rerunning function")
-            print(f"left: {left}")
-            print(f"right: {right}")
+            logging.debug(f"rerunning function...\nleft: {left}\nright: {right}")
             right_hash, this_tuple = generate_hash_from_value(right)
         else:
             if callable(right):
                 try:
                     right_name = right.__name__
-                except:  # lets just assume it's FileMeta for now
+                except BaseException:  # lets just assume it's FileMeta for now
                     right_name = right.file
             else:
                 right_name = str(right)
@@ -282,10 +278,9 @@ def generate_hash_from_value(value):
         else:
             hash_tuple = final_hash
 
-        print(f"hash inputs: {value}")
-        print(f"hash inputs: {left_name} + {right_hash}")
-        print(f"hash: {final_hash}")
-        print(f"hash tuple: {hash_tuple}")
+        logging.debug(
+            f"hash inputs: {value}\nhash inputs: {left_name} + {right_hash}\nhash: {final_hash}\nhash tuple: {hash_tuple}"
+        )
 
         return final_hash, hash_tuple
 
@@ -293,10 +288,12 @@ def generate_hash_from_value(value):
     return str(value), str(value)
 
 
-def save_to_parquet(filename, data):
+def save_to_parquet(filename: str, data: pd.DataFrame) -> pd.DataFrame:
     """Save data to Parquet file."""
     global cache_location
     name = cache_location + "/" + filename + ".parquet"
+
+    logging.debug(f"Saving file to {name}")
 
     # TODO: Implement caching logic here
 
