@@ -7,7 +7,7 @@ import getpass
 import glob
 import hashlib
 import logging
-from typing import Any
+from typing import Any, Callable
 
 import dask.core
 import pandas as pd
@@ -115,7 +115,12 @@ class DiracCluster(JobQueueCluster):  # pylint: disable=missing-class-docstring
 class DiracClient(Client):
     """Client for caching dask computations"""
 
-    def _graph_to_futures(self, dsk, *args, **kwargs):
+    def _graph_to_futures(
+        self,
+        dsk: dict[str, Any] | HighLevelGraph,
+        *args: dict[str, Any],
+        **kwargs: dict[str, Any],
+    ) -> Any:
         if not isinstance(dsk, HighLevelGraph):
             dsk = HighLevelGraph.from_collections(id(dsk), dsk, dependencies=dict())
 
@@ -125,7 +130,7 @@ class DiracClient(Client):
         )
 
         sorted_keys = dask.core.toposort(info)
-        tmp_info = {}
+        tmp_info: dict[str, Any] = {}
         for key in sorted_keys:
             value = info[key]
             hash_tuple = None
@@ -196,7 +201,7 @@ class DiracClient(Client):
         return super()._graph_to_futures(dsk, *args, **kwargs)
 
 
-def check_functions_and_hashes(func_tuple, hash_tuple):
+def check_functions_and_hashes(func_tuple: Any, hash_tuple: Any) -> Any:
     logging.debug(f"Checking func_tuple: {func_tuple}")
     logging.debug(f"Checking hash_tuple: {hash_tuple}")
     global cache_location
@@ -231,7 +236,7 @@ def check_functions_and_hashes(func_tuple, hash_tuple):
             return (save_to_parquet, hash_tuple, (func_tuple))
 
 
-def generate_hash_from_value(value):
+def generate_hash_from_value(value: Callable | tuple[Callable, Any]) -> tuple[str, str]:
     if isinstance(value, tuple):
 
         # Catch when there is no left and right as at end of chain
