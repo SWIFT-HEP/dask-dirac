@@ -204,7 +204,8 @@ class DiracClient(Client):
 def check_functions_and_hashes(func_tuple: Any, hash_tuple: Any) -> Any:
     logging.debug(f"Checking func_tuple: {func_tuple}")
     logging.debug(f"Checking hash_tuple: {hash_tuple}")
-    global cache_location
+    # TODO: move into DiracClient
+    cache_location = "/tmp/dask-dirac-cache"
     cached_files = glob.glob(cache_location + "/*.parquet")
     cached_files = [c[c.rfind("/") + 1 : -4] for c in cached_files]
 
@@ -239,6 +240,8 @@ def check_functions_and_hashes(func_tuple: Any, hash_tuple: Any) -> Any:
 def generate_hash_from_value(value: tuple[Callable[..., Any]]) -> tuple[str, Any]:
     if isinstance(value, tuple):
 
+        this_tuple = None
+
         # Catch when there is no left and right as at end of chain
         if len(value) == 1:
             left = value[0]
@@ -267,10 +270,13 @@ def generate_hash_from_value(value: tuple[Callable[..., Any]]) -> tuple[str, Any
             right_hash, this_tuple = generate_hash_from_value(right)
         else:
             if callable(right):
-                try:
+                if hasattr(right, "__name__"):
                     right_name = right.__name__
-                except BaseException:  # lets just assume it's FileMeta for now
+                elif hasattr(right, "file"):
+                    # if FileMeta for AGC will end up here
                     right_name = right.file
+                else:
+                    right_name = type(right).__name__
             else:
                 right_name = str(right)
             right_hash = right_name
@@ -279,7 +285,7 @@ def generate_hash_from_value(value: tuple[Callable[..., Any]]) -> tuple[str, Any
         combined = left_name + right_hash
         final_hash = hashlib.sha3_384(combined.encode()).hexdigest()
         # TODO: Integrate with DiracClient
-        if "this_tuple" in locals():
+        if this_tuple is not None:
             hash_tuple = (final_hash, this_tuple)
         else:
             hash_tuple = final_hash
@@ -296,7 +302,7 @@ def generate_hash_from_value(value: tuple[Callable[..., Any]]) -> tuple[str, Any
 
 def save_to_parquet(filename: str, data: pd.DataFrame) -> pd.DataFrame:
     """Save data to Parquet file."""
-    global cache_location
+    cache_location = "/tmp/dask-dirac-cache"
     name = cache_location + "/" + filename + ".parquet"
 
     logging.debug(f"Saving file to {name}")
@@ -308,7 +314,7 @@ def save_to_parquet(filename: str, data: pd.DataFrame) -> pd.DataFrame:
 
 def load_from_parquet(filename: str) -> pd.DataFrame:
     """Load data from Parquet file."""
-    global cache_location
     # TODO: Move cache location to DiracClient?
+    cache_location = "/tmp/dask-dirac-cache"
     name = cache_location + "/" + filename + ".parquet"
     return pd.read_parquet(name)
