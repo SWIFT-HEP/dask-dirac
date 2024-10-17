@@ -42,6 +42,7 @@ dependencies = [
     "jinja2",
     "requests",
     "typer",
+    "pandas",
 ]
 
 [project.optional-dependencies]
