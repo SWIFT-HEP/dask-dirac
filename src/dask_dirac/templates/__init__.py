@@ -1,4 +1,5 @@
 """Dask Dirac Template Module"""
+
 from __future__ import annotations
 
 from functools import cache
