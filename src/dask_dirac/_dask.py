@@ -7,7 +7,8 @@ import getpass
 import glob
 import hashlib
 import logging
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import dask.core
 import pandas as pd
@@ -122,11 +123,12 @@ class DiracClient(Client):
         **kwargs: dict[str, Any],
     ) -> Any:
         if not isinstance(dsk, HighLevelGraph):
-            dsk = HighLevelGraph.from_collections(id(dsk), dsk, dependencies=dict())
+            dsk = HighLevelGraph.from_collections(id(dsk), dsk, dependencies={})
 
         info = dsk.to_dict()
         logging.debug(
-            f"Input dask graph:\n{info}\n---------\nperforming caching checks\n---------"
+            "Input dask graph:\n%s\n---------\nperforming caching checks\n---------",
+            info,
         )
 
         sorted_keys = dask.core.toposort(info)
@@ -137,12 +139,12 @@ class DiracClient(Client):
             hash_base = None
             value_for_hash = value
             check_layer = True
-            logging.debug(f"Key: {key}, Value: {value}")
-            logging.debug(f"Checking if tmp_keys: {tmp_info.keys()}, are in {value}")
-            for t_key in tmp_info.keys():
+            logging.debug("Key: %s, Value: %s", key, value)
+            logging.debug("Checking if tmp_keys: %s, are in %s", tmp_info.keys(), value)
+            for t_key in tmp_info:
                 try:
                     if t_key in value:
-                        logging.debug(f"Found {t_key} in {value}")
+                        logging.debug("Found %s in %s", t_key, value)
                         index = value.index(t_key)
 
                         hash_base = tmp_info[t_key]["hash"]  # [index]
@@ -153,11 +155,11 @@ class DiracClient(Client):
                         logging.debug(value_for_hash)
                         logging.debug(index)
                     elif t_key == value:
-                        logging.debug(f"Found {t_key} in {value}")
+                        logging.debug("Found %s in %s", t_key, value)
                         hash_base = tmp_info[t_key]["hash"][0]
                         check_layer = False
                         hash_tuple = hash_base
-                except BaseException:  # ignore problem for now
+                except KeyError:  # ignore problem for now
                     continue
 
             if hash_tuple is None:
@@ -175,7 +177,7 @@ class DiracClient(Client):
         # Now check layers that need to be checked, adding caching
         tmp_2 = {}
         for key in tmp_info.keys():
-            logging.debug(f"Checking {key}... ")
+            logging.debug("Checking %s... ", key)
             # Now we check if hash exist at some location
             input_func_tuple = tmp_info[key]["value"]
             input_hash_tuple = tmp_info[key]["hash"]
@@ -188,22 +190,22 @@ class DiracClient(Client):
                 )
                 tmp_2[key] = func_tuple
 
-            logging.debug(f"final_function_tuple:\n{func_tuple}")
+            logging.debug("final_function_tuple:\n%s", func_tuple)
 
-        logging.debug(f"---------\nFinalized graph: {tmp_2}\n---------")
+        logging.debug("---------\nFinalized graph: %s\n---------", tmp_2)
 
         dsk = HighLevelGraph.from_collections(id(tmp_2), tmp_2, dependencies=dict())
 
         logging.debug(
-            f"---------\nFinalized High Level Graph: {dsk.to_dict()}\n---------"
+            "---------\nFinalized High Level Graph: %s\n---------", dsk.to_dict()
         )
 
         return super()._graph_to_futures(dsk, *args, **kwargs)
 
 
 def check_functions_and_hashes(func_tuple: Any, hash_tuple: Any) -> Any:
-    logging.debug(f"Checking func_tuple: {func_tuple}")
-    logging.debug(f"Checking hash_tuple: {hash_tuple}")
+    logging.debug("Checking func_tuple: %s", func_tuple)
+    logging.debug("Checking hash_tuple: %s", hash_tuple)
     # TODO: move into DiracClient
     cache_location = "/tmp/dask-dirac-cache"
     cached_files = glob.glob(cache_location + "/*.parquet")
@@ -239,7 +241,6 @@ def check_functions_and_hashes(func_tuple: Any, hash_tuple: Any) -> Any:
 
 def generate_hash_from_value(value: tuple[Callable[..., Any]]) -> tuple[str, Any]:
     if isinstance(value, tuple):
-
         this_tuple = None
 
         # Catch when there is no left and right as at end of chain
@@ -259,7 +260,8 @@ def generate_hash_from_value(value: tuple[Callable[..., Any]]) -> tuple[str, Any
         if callable(left):
             try:
                 left_name = left.__name__
-            except BaseException:  # Lets assume it's functools.partial for now
+            except BaseException:  # noqa: B036
+                # Lets assume it's functools.partial for now
                 left_name = type(left).__name__
         else:
             left_name = str(left)
