@@ -4,7 +4,6 @@ Copyright (c) 2022 Luke Kreczko. All rights reserved.
 dask-dirac: DIRAC Executor for Dask
 """
 
-
 from __future__ import annotations
 
 from ._dask import DiracCluster

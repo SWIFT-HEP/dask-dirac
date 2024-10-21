@@ -2,13 +2,15 @@
 This is kept separate from the Dask DiracCluster implementation
 since we might want to move it to a standalone dirac client
 """
+
 from __future__ import annotations
 
 import json
 import os
 import zlib
+from collections.abc import Generator
 from dataclasses import dataclass
-from typing import Any, Generator
+from typing import Any
 
 import _io
 import gfal2  # pylint: disable=import-error
@@ -113,7 +115,7 @@ def _adler32(file_path: str) -> str:
 
     def _read_chunk(
         file_descriptor: _io.BufferedReader, size: int = 1048576
-    ) -> Generator[bytes, None, None]:
+    ) -> Generator[bytes]:
         """Read a chunk of data from a file-like object"""
         while True:
             data = file_descriptor.read(size)
