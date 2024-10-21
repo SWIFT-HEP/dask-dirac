@@ -141,13 +141,13 @@ class DiracClient(Client):
             check_layer = True
             logging.debug("Key: %s, Value: %s", key, value)
             logging.debug("Checking if tmp_keys: %s, are in %s", tmp_info.keys(), value)
-            for t_key in tmp_info:
+            for t_key, t_value in tmp_info.items():
                 try:
                     if t_key in value:
                         logging.debug("Found %s in %s", t_key, value)
                         index = value.index(t_key)
 
-                        hash_base = tmp_info[t_key]["hash"]  # [index]
+                        hash_base = t_value["hash"]  # [index]
                         temp_list = list(value_for_hash)
                         temp_list[index] = hash_base
                         value_for_hash = tuple(temp_list)
@@ -156,7 +156,7 @@ class DiracClient(Client):
                         logging.debug(index)
                     elif t_key == value:
                         logging.debug("Found %s in %s", t_key, value)
-                        hash_base = tmp_info[t_key]["hash"][0]
+                        hash_base = t_value["hash"][0]
                         check_layer = False
                         hash_tuple = hash_base
                 except KeyError:  # ignore problem for now
@@ -172,16 +172,16 @@ class DiracClient(Client):
                 "check_layer": check_layer,
             }
 
-        logging.debug(f"---------\nHashes: {tmp_info}\n---------")
+        logging.debug("---------\nHashes: %s\n---------", tmp_info)
 
         # Now check layers that need to be checked, adding caching
         tmp_2 = {}
-        for key in tmp_info.keys():
+        for key, value in tmp_info.items():
             logging.debug("Checking %s... ", key)
             # Now we check if hash exist at some location
-            input_func_tuple = tmp_info[key]["value"]
-            input_hash_tuple = tmp_info[key]["hash"]
-            if not tmp_info[key]["check_layer"]:
+            input_func_tuple = value["value"]
+            input_hash_tuple = value["hash"]
+            if not value["check_layer"]:
                 logging.debug("Not processing layer")
                 tmp_2[key] = input_func_tuple
             else:
@@ -194,7 +194,7 @@ class DiracClient(Client):
 
         logging.debug("---------\nFinalized graph: %s\n---------", tmp_2)
 
-        dsk = HighLevelGraph.from_collections(id(tmp_2), tmp_2, dependencies=dict())
+        dsk = HighLevelGraph.from_collections(id(tmp_2), tmp_2, dependencies={})
 
         logging.debug(
             "---------\nFinalized High Level Graph: %s\n---------", dsk.to_dict()
@@ -204,6 +204,7 @@ class DiracClient(Client):
 
 
 def check_functions_and_hashes(func_tuple: Any, hash_tuple: Any) -> Any:
+    """Check if functions and hashes exist in cache"""
     logging.debug("Checking func_tuple: %s", func_tuple)
     logging.debug("Checking hash_tuple: %s", hash_tuple)
     # TODO: move into DiracClient
@@ -217,8 +218,7 @@ def check_functions_and_hashes(func_tuple: Any, hash_tuple: Any) -> Any:
         )
         if hash_tuple[0] in cached_files:
             return (load_from_parquet, hash_tuple[0])
-        else:
-            return (save_to_parquet, hash_tuple[0], (func_tuple))
+        return (save_to_parquet, hash_tuple[0], (func_tuple))
 
     # Get to the deepest level and replace
     if isinstance(hash_tuple, tuple) and isinstance(func_tuple, tuple):
@@ -227,19 +227,18 @@ def check_functions_and_hashes(func_tuple: Any, hash_tuple: Any) -> Any:
 
         if current_hash in cached_files:
             return (load_from_parquet, current_hash)
-        else:
-            # Recursively process the nested tuple
-            modified_nested_func = check_functions_and_hashes(nested_func, nested_hash)
-            return (save_to_parquet, current_hash, (current_func, modified_nested_func))
-    else:
-        # Base case: No more nested tuples
-        if hash_tuple in cached_files:
-            return (load_from_parquet, hash_tuple)
-        else:
-            return (save_to_parquet, hash_tuple, (func_tuple))
+        # Recursively process the nested tuple
+        modified_nested_func = check_functions_and_hashes(nested_func, nested_hash)
+        return (save_to_parquet, current_hash, (current_func, modified_nested_func))
+
+    # Base case: No more nested tuples
+    if hash_tuple in cached_files:
+        return (load_from_parquet, hash_tuple)
+    return (save_to_parquet, hash_tuple, (func_tuple))
 
 
 def generate_hash_from_value(value: tuple[Callable[..., Any]]) -> tuple[str, Any]:
+    """Generate hash from value"""
     if isinstance(value, tuple):
         this_tuple = None
 
@@ -253,8 +252,8 @@ def generate_hash_from_value(value: tuple[Callable[..., Any]]) -> tuple[str, Any
             if len(right) == 1:
                 right = right[0]
 
-        logging.debug(f"left: {left}")
-        logging.debug(f"right: {right}")
+        logging.debug("left: %s", left)
+        logging.debug("right: %s", right)
 
         # Process left side
         if callable(left):
@@ -268,7 +267,7 @@ def generate_hash_from_value(value: tuple[Callable[..., Any]]) -> tuple[str, Any
 
         # Process right side
         if isinstance(right, tuple):
-            logging.debug(f"rerunning function...\nleft: {left}\nright: {right}")
+            logging.debug("rerunning function...\nleft: %s\nright: %s", left, right)
             right_hash, this_tuple = generate_hash_from_value(right)
         else:
             if callable(right):
@@ -293,7 +292,12 @@ def generate_hash_from_value(value: tuple[Callable[..., Any]]) -> tuple[str, Any
             hash_tuple = final_hash
 
         logging.debug(
-            f"hash inputs: {value}\nhash inputs: {left_name} + {right_hash}\nhash: {final_hash}\nhash tuple: {hash_tuple}"
+            "hash inputs: %s\nhash inputs: %s + %s\nhash: %s\nhash tuple: %s",
+            value,
+            left_name,
+            right_hash,
+            final_hash,
+            hash_tuple,
         )
 
         return final_hash, hash_tuple
@@ -307,7 +311,7 @@ def save_to_parquet(filename: str, data: pd.DataFrame) -> pd.DataFrame:
     cache_location = "/tmp/dask-dirac-cache"
     name = cache_location + "/" + filename + ".parquet"
 
-    logging.debug(f"Saving file to {name}")
+    logging.debug("Saving file to %s", name)
 
     # TODO: Implement caching logic here
 
