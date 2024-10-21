@@ -1,11 +1,11 @@
 repos:
 - repo: https://github.com/psf/black
-  rev: 22.3.0
+  rev: 24.10.0
   hooks:
   - id: black-jupyter
 
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.2.0
+  rev: v5.0.0
   hooks:
   - id: check-added-large-files
   - id: check-case-conflict
@@ -19,7 +19,7 @@ repos:
   - id: trailing-whitespace
 
 - repo: https://github.com/pre-commit/pygrep-hooks
-  rev: v1.9.0
+  rev: v1.10.0
   hooks:
   - id: python-check-blanket-noqa
   - id: python-check-blanket-type-ignore
@@ -30,19 +30,19 @@ repos:
   - id: rst-inline-touching-normal
 
 - repo: https://github.com/PyCQA/isort
-  rev: 5.11.5
+  rev: 5.13.2
   hooks:
   - id: isort
     args: ["-a", "from __future__ import annotations"]  # Python 3.7+
 
 - repo: https://github.com/asottile/pyupgrade
-  rev: v2.32.0
+  rev: v3.18.0
   hooks:
   - id: pyupgrade
-    args: ["--py37-plus"]
+    args: ["--py311-plus"]
 
 - repo: https://github.com/hadialqattan/pycln
-  rev: v1.3.2
+  rev: v2.4.0
   hooks:
   - id: pycln
     additional_dependencies: [click<8.1]
@@ -50,7 +50,7 @@ repos:
     stages: [manual]
 
 - repo: https://github.com/asottile/yesqa
-  rev: v1.3.0
+  rev: v1.5.0
   hooks:
   - id: yesqa
     exclude: docs/conf.py
@@ -59,28 +59,28 @@ repos:
       - flake8-print
 
 - repo: https://github.com/pycqa/flake8
-  rev: 4.0.1
+  rev: 7.1.1
   hooks:
   - id: flake8
     exclude: docs/conf.py
     additional_dependencies: *flake8_dependencies
 
 - repo: https://github.com/pre-commit/mirrors-mypy
-  rev: v1.12.0
+  rev: v1.12.1
   hooks:
   - id: mypy
     files: src
     additional_dependencies: [types-requests]
 
 - repo: https://github.com/codespell-project/codespell
-  rev: v2.1.0
+  rev: v2.3.0
   hooks:
   - id: codespell
     exclude: docker/conda/environment.yaml
     args: ["--skip=examples/notebooks/*"]
 
 - repo: https://github.com/shellcheck-py/shellcheck-py
-  rev: v0.8.0.4
+  rev: v0.10.0.1
   hooks:
   - id: shellcheck
 
