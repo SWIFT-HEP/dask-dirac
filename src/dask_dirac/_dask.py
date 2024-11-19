@@ -23,7 +23,7 @@ from .templates import get_template
 logger = logging.getLogger(__name__)
 
 
-def _get_site_ports(sites: list[str]) -> str:
+def _get_site_ports(sites: list[str] | str) -> str:
     if "LCG.UKI-SOUTHGRID-RALPP.uk" in sites:
         return " --worker-port 50000:52000"
 
@@ -52,7 +52,8 @@ class DiracJob(Job):
         cert_path: str = "/etc/grid-security/certificates",
         jdl_file: str = _create_tmp_jdl_path(),
         owner_group: str = "dteam_user",
-        dirac_sites: list[str] | None = None,
+        dirac_sites: list[str] | str | None = None,
+        require_gpu: bool = False,
         **base_class_kwargs: dict[str, Any],
     ) -> None:
         super().__init__(
@@ -64,12 +65,15 @@ class DiracJob(Job):
         jdl_template = get_template("jdl.j2")
 
         extra_args = _get_site_ports(dirac_sites) if dirac_sites else ""
+        if isinstance(dirac_sites, str):
+            dirac_sites = [dirac_sites]
 
         rendered_jdl = jdl_template.render(
             container=container,
             public_address=public_address,
             owner=owner_group,
             dirac_sites=dirac_sites,
+            require_gpu=require_gpu,
             extra_args=extra_args,
         )
 

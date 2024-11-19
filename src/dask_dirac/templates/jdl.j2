@@ -9,3 +9,7 @@ OwnerGroup = {{ owner }};
 {% if dirac_sites %}
 Site = "{{ dirac_sites | join(', ') }}";
 {% endif %}
+
+{% if require_gpu %}
+Tags = {"GPU"};
+{% endif %}
