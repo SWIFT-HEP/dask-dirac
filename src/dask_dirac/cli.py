@@ -42,7 +42,8 @@ def submit(
     ),
     # pylint: disable=unused-argument
     dask_script: str = typer.Option(
-        default="who_cares_what_is_here", help="IGNORE THIS. workaround to ignore dask"
+        default="who_cares_what_is_here", help="IGNORE THIS. workaround to ignore dask",
+        hidden=True,
     ),
 ) -> None:
     """Submit a job to DIRAC server"""
