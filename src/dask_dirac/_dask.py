@@ -111,6 +111,12 @@ class DiracCluster(JobQueueCluster):  # pylint: disable=missing-class-docstring
     """
     job_cls = DiracJob
 
+    def __init__(self, *args, **kwargs) -> None:  # type: ignore[no-untyped-def]
+        """Set defaults to be able to use htcondor config. Not actually used with Dirac"""
+        kwargs.setdefault("cores", 1)
+        kwargs.setdefault("memory", "0.5GB")
+        super().__init__(*args, **kwargs)
+
     @classmethod
     def from_name(cls, name: str) -> ProcessInterface:
         """Create a cluster from a name"""

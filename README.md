@@ -19,7 +19,7 @@
 [rtd-link]:                 https://dask-dirac.readthedocs.io/en/latest/?badge=latest
 [sk-badge]:                 https://scikit-hep.org/assets/images/Scikit--HEP-Project-blue.svg
 
-dask-dirac is a library for launching a [dask](https://www.dask.org/) cluster with (DIRAC)[https://dirac.readthedocs.io/en/latest/].
+dask-dirac is a library for launching a [dask](https://www.dask.org/) cluster with [DIRAC](https://dirac.readthedocs.io/en/latest/).
 
 # Installation
 
@@ -33,6 +33,17 @@ pip install dask-dirac
 1. Open port on localhost (default is 8786). Required for scheduler
 2. DIRAC grid certificate
 
+# Usage
+A dask-dirac cluster can be setup in a similar fashion to other dask clusters.
+
+```python
+from dask_dirac import DiracCluster
+from dask.distributed import Client
+
+cluster = DiracCluster()
+cluster.scale(jobs=5)
+client = Client(cluster)
+```
 
 # Acknowledgements
 <!-- readme: contributors -start -->
