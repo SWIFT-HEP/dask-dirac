@@ -126,6 +126,10 @@ class DiracCluster(JobQueueCluster):  # pylint: disable=missing-class-docstring
 class DiracClient(Client):
     """Client for caching dask computations"""
 
+    def __init__(self, *args, cache_location: str = "/tmp/dask-dirac-cache", **kwargs) -> None:  # type: ignore[no-untyped-def]
+        super().__init__(*args, **kwargs)
+        self.cache_location = cache_location
+
     def _graph_to_futures(
         self,
         dsk: dict[str, Any] | HighLevelGraph,
@@ -196,7 +200,7 @@ class DiracClient(Client):
                 tmp_2[key] = input_func_tuple
             else:
                 func_tuple = check_functions_and_hashes(
-                    input_func_tuple, input_hash_tuple
+                    input_func_tuple, input_hash_tuple, self.cache_location
                 )
                 tmp_2[key] = func_tuple
 
@@ -211,16 +215,14 @@ class DiracClient(Client):
         )
 
         return super()._graph_to_futures(dsk, *args, **kwargs)
+    
 
-
-def check_functions_and_hashes(func_tuple: Any, hash_tuple: Any) -> Any:
+def check_functions_and_hashes(func_tuple: Any, hash_tuple: Any, cache_location: str) -> Any:
     """Check if functions and hashes exist in cache"""
     logging.debug("Checking func_tuple: %s", func_tuple)
     logging.debug("Checking hash_tuple: %s", hash_tuple)
-    # TODO: move into DiracClient
-    cache_location = "/tmp/dask-dirac-cache"
-    cached_files = glob.glob(cache_location + "/*.parquet")
-    cached_files = [c[c.rfind("/") + 1 : -4] for c in cached_files]
+    
+    cached_files = get_cached_files(cache_location)
 
     if len(func_tuple) > 2:
         logging.debug(
@@ -236,15 +238,15 @@ def check_functions_and_hashes(func_tuple: Any, hash_tuple: Any) -> Any:
         current_func, nested_func = func_tuple
 
         if current_hash in cached_files:
-            return (load_from_parquet, current_hash)
+            return (load_from_parquet, current_hash, cache_location)
         # Recursively process the nested tuple
-        modified_nested_func = check_functions_and_hashes(nested_func, nested_hash)
-        return (save_to_parquet, current_hash, (current_func, modified_nested_func))
+        modified_nested_func = check_functions_and_hashes(nested_func, nested_hash, cache_location)
+        return (save_to_parquet, current_hash, (current_func, modified_nested_func), cache_location)
 
     # Base case: No more nested tuples
     if hash_tuple in cached_files:
-        return (load_from_parquet, hash_tuple)
-    return (save_to_parquet, hash_tuple, (func_tuple))
+        return (load_from_parquet, hash_tuple, cache_location)
+    return (save_to_parquet, hash_tuple, (func_tuple), cache_location)
 
 
 def generate_hash_from_value(value: tuple[Callable[..., Any]]) -> tuple[str, Any]:
@@ -316,21 +318,53 @@ def generate_hash_from_value(value: tuple[Callable[..., Any]]) -> tuple[str, Any
     return str(value), str(value)
 
 
-def save_to_parquet(filename: str, data: pd.DataFrame) -> pd.DataFrame:
+def save_to_parquet(filename: str, data: pd.DataFrame, cache_location: str) -> pd.DataFrame:
     """Save data to Parquet file."""
-    cache_location = "/tmp/dask-dirac-cache"
-    name = cache_location + "/" + filename + ".parquet"
 
-    logging.debug("Saving file to %s", name)
+    # ensure dataframe columns have names
+    if not all(isinstance(col, str) for col in data.columns):
+        data.columns = [f"col_{i}" for i in range(data.shape[1])]
+        
+    if cache_location.startswith("rucio"):
+        # TODO: RUCIO 
+        raise NotImplementedError("Rucio caching is not implemented yet")
+    elif cache_location.startswith("local"):
+        cache_location = cache_location[len("local://"):]
+        name = cache_location + "/" + filename + ".parquet"
+        return data.to_parquet(name)
+    else:
+        # TODO: DIRAC
+        raise ValueError("Unsupported cache location")
 
-    # TODO: Implement caching logic here
 
-    return data
-
-
-def load_from_parquet(filename: str) -> pd.DataFrame:
+def load_from_parquet(filename: str, cache_location: str) -> pd.DataFrame:
     """Load data from Parquet file."""
-    # TODO: Move cache location to DiracClient?
-    cache_location = "/tmp/dask-dirac-cache"
-    name = cache_location + "/" + filename + ".parquet"
-    return pd.read_parquet(name)
+    if cache_location.startswith("rucio"):
+        # TODO: RUCIO 
+        raise NotImplementedError("Rucio caching is not implemented yet")
+    elif cache_location.startswith("local"):
+        cache_location = cache_location[len("local://"):]
+        name = cache_location + "/" + filename + ".parquet"
+        return pd.read_parquet(name)
+    else:
+        # TODO: DIRAC
+        raise ValueError("Unsupported cache location")
+
+
+
+def get_cached_files(cache_location: str) -> List[str]:
+    """Get cached filed from cache location"""
+
+    if cache_location.startswith("rucio"):
+        # TODO: RUCIO 
+        raise NotImplementedError("Rucio caching is not implemented yet")
+    elif cache_location.startswith("local"):
+        cache_location = cache_location[len("local://"):]
+        file_list = glob.glob(cache_location + "/*.parquet")
+    else:
+        # TODO: DIRAC
+        raise ValueError("Unsupported cache location")
+
+    # remove parquet extension and get file name from path
+    file_list = [c[c.rfind("/") + 1 : -7] for c in file_list]
+    return file_list
