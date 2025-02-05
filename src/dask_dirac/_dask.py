@@ -9,6 +9,7 @@ import hashlib
 import logging
 from collections.abc import Callable
 from typing import Any
+import os
 
 import dask.core
 import pandas as pd
@@ -325,11 +326,13 @@ def save_to_parquet(filename: str, data: pd.DataFrame, cache_location: str) -> p
     if not all(isinstance(col, str) for col in data.columns):
         data.columns = [f"col_{i}" for i in range(data.shape[1])]
         
-    if cache_location.startswith("rucio"):
+    if cache_location.startswith("rucio:"):
         # TODO: RUCIO 
         raise NotImplementedError("Rucio caching is not implemented yet")
     elif cache_location.startswith("local"):
-        cache_location = cache_location[len("local://"):]
+        cache_location = cache_location[len("local:"):]
+        # make sure the directory exists
+        os.makedirs(os.path.dirname(cache_location), exist_ok=True)
         name = cache_location + "/" + filename + ".parquet"
         return data.to_parquet(name)
     else:
@@ -339,11 +342,11 @@ def save_to_parquet(filename: str, data: pd.DataFrame, cache_location: str) -> p
 
 def load_from_parquet(filename: str, cache_location: str) -> pd.DataFrame:
     """Load data from Parquet file."""
-    if cache_location.startswith("rucio"):
+    if cache_location.startswith("rucio:"):
         # TODO: RUCIO 
         raise NotImplementedError("Rucio caching is not implemented yet")
     elif cache_location.startswith("local"):
-        cache_location = cache_location[len("local://"):]
+        cache_location = cache_location[len("local:"):]
         name = cache_location + "/" + filename + ".parquet"
         return pd.read_parquet(name)
     else:
@@ -355,11 +358,11 @@ def load_from_parquet(filename: str, cache_location: str) -> pd.DataFrame:
 def get_cached_files(cache_location: str) -> List[str]:
     """Get cached filed from cache location"""
 
-    if cache_location.startswith("rucio"):
+    if cache_location.startswith("rucio:"):
         # TODO: RUCIO 
         raise NotImplementedError("Rucio caching is not implemented yet")
     elif cache_location.startswith("local"):
-        cache_location = cache_location[len("local://"):]
+        cache_location = cache_location[len("local:"):]
         file_list = glob.glob(cache_location + "/*.parquet")
     else:
         # TODO: DIRAC
