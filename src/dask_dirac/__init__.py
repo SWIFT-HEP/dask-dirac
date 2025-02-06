@@ -6,7 +6,7 @@ dask-dirac: DIRAC Executor for Dask
 
 from __future__ import annotations
 
-from ._dask import DiracCluster
+from ._dask import DiracCluster, DiracClient
 from ._version import get_versions
 
 __version__ = get_versions()["version"]

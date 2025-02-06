@@ -224,14 +224,15 @@ def check_functions_and_hashes(func_tuple: Any, hash_tuple: Any, cache_location:
     logging.debug("Checking hash_tuple: %s", hash_tuple)
     
     cached_files = get_cached_files(cache_location)
+    logging.debug("Cached files: %s", cached_files)
 
     if len(func_tuple) > 2:
         logging.debug(
             "Need to think about how to do this, but for now just check first hash"
         )
         if hash_tuple[0] in cached_files:
-            return (load_from_parquet, hash_tuple[0])
-        return (save_to_parquet, hash_tuple[0], (func_tuple))
+            return (load_from_parquet, hash_tuple[0], cache_location)
+        return (save_to_parquet, hash_tuple[0], (func_tuple), cache_location)
 
     # Get to the deepest level and replace
     if isinstance(hash_tuple, tuple) and isinstance(func_tuple, tuple):
@@ -320,9 +321,15 @@ def generate_hash_from_value(value: tuple[Callable[..., Any]]) -> tuple[str, Any
 
 
 def save_to_parquet(filename: str, data: pd.DataFrame, cache_location: str) -> pd.DataFrame:
-    """Save data to Parquet file."""
+    """Save data to Parquet file.
+    TODO: Make more generic than dataframe.
+    """
+
+    logging.debug("Writing stage to: %s/%s.parquet", cache_location, filename)
 
     # ensure dataframe columns have names
+    if type(data) != pd.DataFrame:
+        data = pd.DataFrame(data)
     if not all(isinstance(col, str) for col in data.columns):
         data.columns = [f"col_{i}" for i in range(data.shape[1])]
         
@@ -332,9 +339,10 @@ def save_to_parquet(filename: str, data: pd.DataFrame, cache_location: str) -> p
     elif cache_location.startswith("local"):
         cache_location = cache_location[len("local:"):]
         # make sure the directory exists
-        os.makedirs(os.path.dirname(cache_location), exist_ok=True)
+        os.makedirs(cache_location, exist_ok=True)
         name = cache_location + "/" + filename + ".parquet"
-        return data.to_parquet(name)
+        data.to_parquet(name)
+        return data
     else:
         # TODO: DIRAC
         raise ValueError("Unsupported cache location")
@@ -342,6 +350,8 @@ def save_to_parquet(filename: str, data: pd.DataFrame, cache_location: str) -> p
 
 def load_from_parquet(filename: str, cache_location: str) -> pd.DataFrame:
     """Load data from Parquet file."""
+    logging.debug("Loading cached file: %s/%s.parquet", cache_location, filename)
+
     if cache_location.startswith("rucio:"):
         # TODO: RUCIO 
         raise NotImplementedError("Rucio caching is not implemented yet")
@@ -369,5 +379,5 @@ def get_cached_files(cache_location: str) -> List[str]:
         raise ValueError("Unsupported cache location")
 
     # remove parquet extension and get file name from path
-    file_list = [c[c.rfind("/") + 1 : -7] for c in file_list]
+    file_list = [c[c.rfind("/") + 1 : -8] for c in file_list]
     return file_list
