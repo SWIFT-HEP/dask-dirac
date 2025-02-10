@@ -347,7 +347,7 @@ def save_to_parquet(
     if cache_location.startswith("rucio:"):
         # TODO: RUCIO
         raise NotImplementedError("Rucio caching is not implemented yet")
-    elif cache_location.startswith("local"):
+    if cache_location.startswith("local"):
         cache_location = cache_location[len("local:") :]
         # make sure the directory exists
         os.makedirs(cache_location, exist_ok=True)
@@ -366,7 +366,7 @@ def load_from_parquet(filename: str, cache_location: str) -> pd.DataFrame:
     if cache_location.startswith("rucio:"):
         # TODO: RUCIO
         raise NotImplementedError("Rucio caching is not implemented yet")
-    elif cache_location.startswith("local"):
+    if cache_location.startswith("local"):
         cache_location = cache_location[len("local:") :]
         name = cache_location + "/" + filename + ".parquet"
         return pd.read_parquet(name)
@@ -381,7 +381,7 @@ def get_cached_files(cache_location: str) -> list[str]:
     if cache_location.startswith("rucio:"):
         # TODO: RUCIO
         raise NotImplementedError("Rucio caching is not implemented yet")
-    elif cache_location.startswith("local"):
+    if cache_location.startswith("local"):
         cache_location = cache_location[len("local:") :]
         file_list = glob.glob(cache_location + "/*.parquet")
     else:
