@@ -7,9 +7,9 @@ import getpass
 import glob
 import hashlib
 import logging
+import os
 from collections.abc import Callable
 from typing import Any
-import os
 
 import dask.core
 import pandas as pd
@@ -216,13 +216,15 @@ class DiracClient(Client):
         )
 
         return super()._graph_to_futures(dsk, *args, **kwargs)
-    
 
-def check_functions_and_hashes(func_tuple: Any, hash_tuple: Any, cache_location: str) -> Any:
+
+def check_functions_and_hashes(
+    func_tuple: Any, hash_tuple: Any, cache_location: str
+) -> Any:
     """Check if functions and hashes exist in cache"""
     logging.debug("Checking func_tuple: %s", func_tuple)
     logging.debug("Checking hash_tuple: %s", hash_tuple)
-    
+
     cached_files = get_cached_files(cache_location)
     logging.debug("Cached files: %s", cached_files)
 
@@ -242,8 +244,15 @@ def check_functions_and_hashes(func_tuple: Any, hash_tuple: Any, cache_location:
         if current_hash in cached_files:
             return (load_from_parquet, current_hash, cache_location)
         # Recursively process the nested tuple
-        modified_nested_func = check_functions_and_hashes(nested_func, nested_hash, cache_location)
-        return (save_to_parquet, current_hash, (current_func, modified_nested_func), cache_location)
+        modified_nested_func = check_functions_and_hashes(
+            nested_func, nested_hash, cache_location
+        )
+        return (
+            save_to_parquet,
+            current_hash,
+            (current_func, modified_nested_func),
+            cache_location,
+        )
 
     # Base case: No more nested tuples
     if hash_tuple in cached_files:
@@ -320,7 +329,9 @@ def generate_hash_from_value(value: tuple[Callable[..., Any]]) -> tuple[str, Any
     return str(value), str(value)
 
 
-def save_to_parquet(filename: str, data: pd.DataFrame, cache_location: str) -> pd.DataFrame:
+def save_to_parquet(
+    filename: str, data: pd.DataFrame, cache_location: str
+) -> pd.DataFrame:
     """Save data to Parquet file.
     TODO: Make more generic than dataframe.
     """
@@ -328,16 +339,16 @@ def save_to_parquet(filename: str, data: pd.DataFrame, cache_location: str) -> p
     logging.debug("Writing stage to: %s/%s.parquet", cache_location, filename)
 
     # ensure dataframe columns have names
-    if type(data) != pd.DataFrame:
+    if not isinstance(data, pd.DataFrame):
         data = pd.DataFrame(data)
     if not all(isinstance(col, str) for col in data.columns):
         data.columns = [f"col_{i}" for i in range(data.shape[1])]
-        
+
     if cache_location.startswith("rucio:"):
-        # TODO: RUCIO 
+        # TODO: RUCIO
         raise NotImplementedError("Rucio caching is not implemented yet")
     elif cache_location.startswith("local"):
-        cache_location = cache_location[len("local:"):]
+        cache_location = cache_location[len("local:") :]
         # make sure the directory exists
         os.makedirs(cache_location, exist_ok=True)
         name = cache_location + "/" + filename + ".parquet"
@@ -353,10 +364,10 @@ def load_from_parquet(filename: str, cache_location: str) -> pd.DataFrame:
     logging.debug("Loading cached file: %s/%s.parquet", cache_location, filename)
 
     if cache_location.startswith("rucio:"):
-        # TODO: RUCIO 
+        # TODO: RUCIO
         raise NotImplementedError("Rucio caching is not implemented yet")
     elif cache_location.startswith("local"):
-        cache_location = cache_location[len("local:"):]
+        cache_location = cache_location[len("local:") :]
         name = cache_location + "/" + filename + ".parquet"
         return pd.read_parquet(name)
     else:
@@ -364,15 +375,14 @@ def load_from_parquet(filename: str, cache_location: str) -> pd.DataFrame:
         raise ValueError("Unsupported cache location")
 
 
-
-def get_cached_files(cache_location: str) -> List[str]:
+def get_cached_files(cache_location: str) -> list[str]:
     """Get cached filed from cache location"""
 
     if cache_location.startswith("rucio:"):
-        # TODO: RUCIO 
+        # TODO: RUCIO
         raise NotImplementedError("Rucio caching is not implemented yet")
     elif cache_location.startswith("local"):
-        cache_location = cache_location[len("local:"):]
+        cache_location = cache_location[len("local:") :]
         file_list = glob.glob(cache_location + "/*.parquet")
     else:
         # TODO: DIRAC
