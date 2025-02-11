@@ -344,9 +344,6 @@ def save_to_parquet(
     if not all(isinstance(col, str) for col in data.columns):
         data.columns = [f"col_{i}" for i in range(data.shape[1])]
 
-    if cache_location.startswith("rucio:"):
-        # TODO: RUCIO
-        raise NotImplementedError("Rucio caching is not implemented yet")
     if cache_location.startswith("local"):
         cache_location = cache_location[len("local:") :]
         # make sure the directory exists
@@ -355,38 +352,35 @@ def save_to_parquet(
         data.to_parquet(name)
         return data
     else:
+        # TODO: RUCIO
         # TODO: DIRAC
-        raise ValueError("Unsupported cache location")
+        raise NotImplementedError("Caching is not implemented yet for %s", cache_location)
 
 
 def load_from_parquet(filename: str, cache_location: str) -> pd.DataFrame:
     """Load data from Parquet file."""
     logging.debug("Loading cached file: %s/%s.parquet", cache_location, filename)
 
-    if cache_location.startswith("rucio:"):
-        # TODO: RUCIO
-        raise NotImplementedError("Rucio caching is not implemented yet")
     if cache_location.startswith("local"):
         cache_location = cache_location[len("local:") :]
         name = cache_location + "/" + filename + ".parquet"
         return pd.read_parquet(name)
     else:
+        # TODO: RUCIO
         # TODO: DIRAC
-        raise ValueError("Unsupported cache location")
+        raise NotImplementedError("Caching is not implemented yet for %s", cache_location)
 
 
 def get_cached_files(cache_location: str) -> list[str]:
     """Get cached filed from cache location"""
 
-    if cache_location.startswith("rucio:"):
-        # TODO: RUCIO
-        raise NotImplementedError("Rucio caching is not implemented yet")
     if cache_location.startswith("local"):
         cache_location = cache_location[len("local:") :]
         file_list = glob.glob(cache_location + "/*.parquet")
     else:
+        # TODO: RUCIO
         # TODO: DIRAC
-        raise ValueError("Unsupported cache location")
+        raise NotImplementedError("Caching is not implemented yet for %s", cache_location)
 
     # remove parquet extension and get file name from path
     file_list = [c[c.rfind("/") + 1 : -8] for c in file_list]
