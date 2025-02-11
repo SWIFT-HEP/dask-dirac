@@ -354,7 +354,9 @@ def save_to_parquet(
     else:
         # TODO: RUCIO
         # TODO: DIRAC
-        raise NotImplementedError("Caching is not implemented yet for %s", cache_location)
+        raise NotImplementedError(
+            "Caching is not implemented yet for %s", cache_location
+        )
 
 
 def load_from_parquet(filename: str, cache_location: str) -> pd.DataFrame:
@@ -368,7 +370,9 @@ def load_from_parquet(filename: str, cache_location: str) -> pd.DataFrame:
     else:
         # TODO: RUCIO
         # TODO: DIRAC
-        raise NotImplementedError("Caching is not implemented yet for %s", cache_location)
+        raise NotImplementedError(
+            "Caching is not implemented yet for %s", cache_location
+        )
 
 
 def get_cached_files(cache_location: str) -> list[str]:
@@ -380,7 +384,9 @@ def get_cached_files(cache_location: str) -> list[str]:
     else:
         # TODO: RUCIO
         # TODO: DIRAC
-        raise NotImplementedError("Caching is not implemented yet for %s", cache_location)
+        raise NotImplementedError(
+            "Caching is not implemented yet for %s", cache_location
+        )
 
     # remove parquet extension and get file name from path
     file_list = [c[c.rfind("/") + 1 : -8] for c in file_list]
