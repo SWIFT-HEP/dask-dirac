@@ -22,7 +22,7 @@ class DiracSettings:
     """Settings for DIRAC queries"""
 
     server_url: str  # TODO: add validator
-    capath: str = "/etc/grid-security/certificates"
+    capath: str = "/cvmfs/grid.cern.ch/etc/grid-security/certificates/"
     user_proxy: str = ""
     query_url: str = ""
 
@@ -145,7 +145,7 @@ def add_file(
     """Add file to directory on DIRAC server"""
     # example: https://github.com/cern-fts/gfal2-python/blob/develop/example/python/gfal2_copy.py
     # For now put everything under swift-hep at RAL site
-    base_destination = "https://mover.pp.rl.ac.uk:2880/pnfs/pp.rl.ac.uk/data/gridpp/"
+    base_destination = "gsiftp://mover.pp.rl.ac.uk:2880/pnfs/pp.rl.ac.uk/data/gridpp/"
 
     # upload the file to server
     destination = f"{base_destination}{remote_file}"
