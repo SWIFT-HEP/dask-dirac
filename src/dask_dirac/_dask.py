@@ -380,7 +380,7 @@ def get_cached_files(cache_location: str) -> list[str]:
         # remove parquet extension and get file name from path
         file_list = [c[c.rfind("/") + 1 : -8] for c in file_list]
         return file_list
-    
+
     # TODO: RUCIO
     # TODO: DIRAC
     raise NotImplementedError("Caching is not implemented yet for %s", cache_location)
