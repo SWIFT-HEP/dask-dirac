@@ -351,12 +351,12 @@ def save_to_parquet(
         name = cache_location + "/" + filename + ".parquet"
         data.to_parquet(name)
         return data
-    else:
-        # TODO: RUCIO
-        # TODO: DIRAC
-        raise NotImplementedError(
-            "Caching is not implemented yet for %s", cache_location
-        )
+
+    # TODO: RUCIO
+    # TODO: DIRAC
+    raise NotImplementedError(
+        "Caching is not implemented yet for %s", cache_location
+    )
 
 
 def load_from_parquet(filename: str, cache_location: str) -> pd.DataFrame:
@@ -367,12 +367,12 @@ def load_from_parquet(filename: str, cache_location: str) -> pd.DataFrame:
         cache_location = cache_location[len("local:") :]
         name = cache_location + "/" + filename + ".parquet"
         return pd.read_parquet(name)
-    else:
-        # TODO: RUCIO
-        # TODO: DIRAC
-        raise NotImplementedError(
-            "Caching is not implemented yet for %s", cache_location
-        )
+
+    # TODO: RUCIO
+    # TODO: DIRAC
+    raise NotImplementedError(
+        "Caching is not implemented yet for %s", cache_location
+    )
 
 
 def get_cached_files(cache_location: str) -> list[str]:
@@ -381,13 +381,12 @@ def get_cached_files(cache_location: str) -> list[str]:
     if cache_location.startswith("local"):
         cache_location = cache_location[len("local:") :]
         file_list = glob.glob(cache_location + "/*.parquet")
-    else:
-        # TODO: RUCIO
-        # TODO: DIRAC
-        raise NotImplementedError(
-            "Caching is not implemented yet for %s", cache_location
+        # remove parquet extension and get file name from path
+        file_list = [c[c.rfind("/") + 1 : -8] for c in file_list]
+        return file_list
+    
+    # TODO: RUCIO
+    # TODO: DIRAC
+    raise NotImplementedError(
+        "Caching is not implemented yet for %s", cache_location
         )
-
-    # remove parquet extension and get file name from path
-    file_list = [c[c.rfind("/") + 1 : -8] for c in file_list]
-    return file_list
