@@ -78,7 +78,7 @@ def whoami(settings: DiracSettings) -> Any:
     return _query(settings, params)
 
 
-def get_directory_sucess_files(result: Any) -> list[str]:
+def get_directory_success_files(result: Any) -> list[str]:
     """Get files that are found in a directory"""
 
     sucessful_keys = result["Value"]["Successful"].keys()
@@ -121,6 +121,14 @@ def remove_file(settings: DiracSettings, lfns: str) -> Any:
     endpoint = "DataManagement/FileCatalog"
     settings.query_url = f"{settings.server_url}/{endpoint}"
     params = {"method": "removeFile", "args": json.dumps([lfns])}
+    return _query(settings, params)
+
+
+def get_file(settings: DiracSettings, lfns: str) -> Any:
+    """Download a file from DIRAC server"""
+    endpoint = "DataManagement/FileCatalog"
+    settings.query_url = f"{settings.server_url}/{endpoint}"
+    params = {"method": "getFile", "args": json.dumps([lfns])}
     return _query(settings, params)
 
 

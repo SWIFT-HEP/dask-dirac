@@ -161,6 +161,24 @@ def remove_file(
     result = _dirac.remove_file(settings, lfns)
     typer.echo(result)
 
+@app.command()
+def get_file(
+    server_url: str,
+    lfns: str,
+    capath: str = typer.Option(
+        default="/etc/grid-security/certificates",
+        help="path to CA certificate directory",
+    ),
+    user_proxy: str = typer.Option(
+        default="/tmp/x509up_u1000", help="path to user proxy"
+    ),
+) -> None:
+    """Download a file to local directory"""
+
+    settings = _dirac.DiracSettings(server_url, capath, user_proxy)
+    result = _dirac.get_file(settings, lfns)
+    typer.echo(result)
+
 
 @app.command()
 def add_file(
