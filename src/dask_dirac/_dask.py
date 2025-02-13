@@ -20,6 +20,7 @@ from distributed.deploy.spec import ProcessInterface
 from requests import get
 
 from .templates import get_template
+from . import _dirac
 
 logger = logging.getLogger(__name__)
 
@@ -378,6 +379,18 @@ def get_cached_files(cache_location: str) -> list[str]:
         cache_location = cache_location[len("local:") :]
         file_list = glob.glob(cache_location + "/*.parquet")
         # remove parquet extension and get file name from path
+        file_list = [c[c.rfind("/") + 1 : -8] for c in file_list]
+        return file_list
+    elif cache_location.startswith("dirac"):
+        cache_location = cache_location[len("dirac:") :]
+        # Hardcode for now
+        server_url = "https://diracdev.grid.hep.ph.ic.ac.uk:8444"
+        capath = "/cvmfs/grid.cern.ch/etc/grid-security/certificates/"
+        user_proxy = "/tmp/x509up_u397871"
+        settings = _dirac.DiracSettings(server_url, capath, user_proxy)
+        result = _dirac.get_directory_dump(settings, cache_location)
+        file_list = _dirac.get_directory_sucess_files(result)
+        file_list = [file for file in file_list if file.endswith(".parquet")]
         file_list = [c[c.rfind("/") + 1 : -8] for c in file_list]
         return file_list
 

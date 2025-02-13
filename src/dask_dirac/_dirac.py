@@ -77,6 +77,19 @@ def whoami(settings: DiracSettings) -> Any:
     params = {"method": "whoami"}
     return _query(settings, params)
 
+def get_directory_sucess_files(result: Any) -> list[str]:
+    """Get files that are found in a directory"""
+
+    sucessful_keys = result['Value']['Successful'].keys()
+    if len(sucessful_keys) == 0:
+        return []
+    else:
+        all_successful_files = []
+        for key in sucessful_keys:
+            file_keys = list(result['Value']['Successful'][key]['Files'].keys())
+            all_successful_files.extend(file_keys)
+        return all_successful_files
+
 
 def get_directory_dump(settings: DiracSettings, lfns: str) -> Any:
     """Get directory dump from DIRAC server"""
