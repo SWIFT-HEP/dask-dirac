@@ -145,7 +145,7 @@ def add_file(
     """Add file to directory on DIRAC server"""
     # example: https://github.com/cern-fts/gfal2-python/blob/develop/example/python/gfal2_copy.py
     # For now put everything under swift-hep at RAL site
-    base_destination = "gsiftp://mover.pp.rl.ac.uk:2880/pnfs/pp.rl.ac.uk/data/gridpp/"
+    base_destination = "https://mover.pp.rl.ac.uk:2880/pnfs/pp.rl.ac.uk/data"
 
     # upload the file to server
     destination = f"{base_destination}{remote_file}"
@@ -160,6 +160,9 @@ def add_file(
     context.filecopy(params, source, destination)
 
     # register file
+    # if file is already registered, then this won't work. 
+    # Need to remove the file first.
+    # TODO: remove file if --overwrite is being used
     endpoint = "DataManagement/FileCatalog"
     settings.query_url = f"{settings.server_url}/{endpoint}"
 
