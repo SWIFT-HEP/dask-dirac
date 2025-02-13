@@ -77,16 +77,17 @@ def whoami(settings: DiracSettings) -> Any:
     params = {"method": "whoami"}
     return _query(settings, params)
 
+
 def get_directory_sucess_files(result: Any) -> list[str]:
     """Get files that are found in a directory"""
 
-    sucessful_keys = result['Value']['Successful'].keys()
+    sucessful_keys = result["Value"]["Successful"].keys()
     if len(sucessful_keys) == 0:
         return []
     else:
         all_successful_files = []
         for key in sucessful_keys:
-            file_keys = list(result['Value']['Successful'][key]['Files'].keys())
+            file_keys = list(result["Value"]["Successful"][key]["Files"].keys())
             all_successful_files.extend(file_keys)
         return all_successful_files
 
@@ -173,7 +174,7 @@ def add_file(
     context.filecopy(params, source, destination)
 
     # register file
-    # if file is already registered, then this won't work. 
+    # if file is already registered, then this won't work.
     # Need to remove the file first.
     # TODO: remove file if --overwrite is being used
     endpoint = "DataManagement/FileCatalog"

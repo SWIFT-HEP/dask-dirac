@@ -19,8 +19,8 @@ from dask_jobqueue.core import Job, JobQueueCluster, cluster_parameters, job_par
 from distributed.deploy.spec import ProcessInterface
 from requests import get
 
-from .templates import get_template
 from . import _dirac
+from .templates import get_template
 
 logger = logging.getLogger(__name__)
 
