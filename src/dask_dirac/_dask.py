@@ -345,8 +345,8 @@ def save_to_parquet(
     if not all(isinstance(col, str) for col in data.columns):
         data.columns = [f"col_{i}" for i in range(data.shape[1])]
 
-    if cache_location.startswith("local"):
-        cache_location = cache_location[len("local:") :]
+    if cache_location.startswith("file://"):
+        cache_location = cache_location[len("file://") :]
         # make sure the directory exists
         os.makedirs(cache_location, exist_ok=True)
         name = cache_location + "/" + filename + ".parquet"
@@ -362,8 +362,8 @@ def load_from_parquet(filename: str, cache_location: str) -> pd.DataFrame:
     """Load data from Parquet file."""
     logging.debug("Loading cached file: %s/%s.parquet", cache_location, filename)
 
-    if cache_location.startswith("local"):
-        cache_location = cache_location[len("local:") :]
+    if cache_location.startswith("file://"):
+        cache_location = cache_location[len("file://") :]
         name = cache_location + "/" + filename + ".parquet"
         return pd.read_parquet(name)
 
@@ -375,21 +375,21 @@ def load_from_parquet(filename: str, cache_location: str) -> pd.DataFrame:
 def get_cached_files(cache_location: str) -> list[str]:
     """Get cached filed from cache location"""
 
-    if cache_location.startswith("local"):
-        cache_location = cache_location[len("local:") :]
+    if cache_location.startswith("file://"):
+        cache_location = cache_location[len("file://") :]
         file_list = glob.glob(cache_location + "/*.parquet")
         # remove parquet extension and get file name from path
         file_list = [c[c.rfind("/") + 1 : -8] for c in file_list]
         return file_list
-    elif cache_location.startswith("dirac"):
-        cache_location = cache_location[len("dirac:") :]
+    elif cache_location.startswith("dirac://"):
+        cache_location = cache_location[len("dirac://") :]
         # Hardcode for now
         server_url = "https://diracdev.grid.hep.ph.ic.ac.uk:8444"
         capath = "/cvmfs/grid.cern.ch/etc/grid-security/certificates/"
         user_proxy = "/tmp/x509up_u397871"
         settings = _dirac.DiracSettings(server_url, capath, user_proxy)
         result = _dirac.get_directory_dump(settings, cache_location)
-        file_list = _dirac.get_directory_sucess_files(result)
+        file_list = _dirac.get_directory_success_files(result)
         file_list = [file for file in file_list if file.endswith(".parquet")]
         file_list = [c[c.rfind("/") + 1 : -8] for c in file_list]
         return file_list
