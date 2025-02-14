@@ -161,6 +161,7 @@ def remove_file(
     result = _dirac.remove_file(settings, lfns)
     typer.echo(result)
 
+
 @app.command()
 def get_file(
     server_url: str,
