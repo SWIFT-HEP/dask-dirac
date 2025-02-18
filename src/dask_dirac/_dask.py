@@ -56,6 +56,7 @@ class DiracJob(Job):
         owner_group: str = "dteam_user",
         dirac_sites: list[str] | str | None = None,
         require_gpu: bool = False,
+        container: str = "docker://sameriksen/dask:centos9",
         **base_class_kwargs: dict[str, Any],
     ) -> None:
         super().__init__(
@@ -63,7 +64,6 @@ class DiracJob(Job):
         )
         # public_address = get("https://ifconfig.me", timeout=30).content.decode("utf8")
         public_address = get("https://v4.ident.me/", timeout=30).content.decode("utf8")
-        container = "docker://sameriksen/dask:centos9"
         jdl_template = get_template("jdl.j2")
 
         extra_args = _get_site_ports(dirac_sites) if dirac_sites else ""
