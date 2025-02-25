@@ -13,7 +13,10 @@ from dataclasses import dataclass
 from typing import Any
 
 import _io
-import gfal2  # pylint: disable=import-error
+try:
+    import gfal2  # pylint: disable=import-error
+except ImportError:
+    gfal2 = None  # type: ignore[assignment]
 import requests
 
 
