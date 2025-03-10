@@ -57,6 +57,7 @@ class DiracJob(Job):
         dirac_sites: list[str] | str | None = None,
         require_gpu: bool = False,
         container: str = "docker://sameriksen/dask:centos9",
+        nthreads: int | None = None,
         **base_class_kwargs: dict[str, Any],
     ) -> None:
         super().__init__(
@@ -67,6 +68,8 @@ class DiracJob(Job):
         jdl_template = get_template("jdl.j2")
 
         extra_args = _get_site_ports(dirac_sites) if dirac_sites else ""
+        extra_args += f" --nthreads {nthreads}" if nthreads else ""
+        
         if isinstance(dirac_sites, str):
             dirac_sites = [dirac_sites]
 
