@@ -69,7 +69,7 @@ class DiracJob(Job):
 
         extra_args = _get_site_ports(dirac_sites) if dirac_sites else ""
         extra_args += f" --nthreads {nthreads}" if nthreads else ""
-        
+
         if isinstance(dirac_sites, str):
             dirac_sites = [dirac_sites]
 
