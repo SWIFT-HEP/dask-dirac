@@ -16,7 +16,7 @@ import _io
 try:
     import gfal2  # pylint: disable=import-error
 except ImportError:
-    gfal2 = None  # type: ignore[assignment]
+    gfal2 = None
 import requests
 
 
