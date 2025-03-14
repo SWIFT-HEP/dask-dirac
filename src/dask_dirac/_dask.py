@@ -358,7 +358,7 @@ def save_to_parquet(
 
     # TODO: RUCIO
     # TODO: DIRAC
-    raise NotImplementedError("Caching is not implemented yet for %s", cache_location)
+    raise NotImplementedError(f"Caching is not implemented yet for {cache_location}")
 
 
 def load_from_parquet(filename: str, cache_location: str) -> pd.DataFrame:
@@ -372,7 +372,7 @@ def load_from_parquet(filename: str, cache_location: str) -> pd.DataFrame:
 
     # TODO: RUCIO
     # TODO: DIRAC
-    raise NotImplementedError("Caching is not implemented yet for %s", cache_location)
+    raise NotImplementedError(f"Caching is not implemented yet for {cache_location}")
 
 
 def get_cached_files(cache_location: str) -> list[str]:
@@ -399,4 +399,4 @@ def get_cached_files(cache_location: str) -> list[str]:
 
     # TODO: RUCIO
     # TODO: DIRAC
-    raise NotImplementedError("Caching is not implemented yet for %s", cache_location)
+    raise NotImplementedError(f"Caching is not implemented yet for {cache_location}")
