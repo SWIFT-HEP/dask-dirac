@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from typing import Any
 
 import _io
+
 try:
     import gfal2  # pylint: disable=import-error
 except ImportError:
