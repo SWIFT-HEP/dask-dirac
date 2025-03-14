@@ -384,7 +384,7 @@ def get_cached_files(cache_location: str) -> list[str]:
         # remove parquet extension and get file name from path
         file_list = [c[c.rfind("/") + 1 : -8] for c in file_list]
         return file_list
-    elif cache_location.startswith("dirac://"):
+    if cache_location.startswith("dirac://"):
         cache_location = cache_location[len("dirac://") :]
         # Hardcode for now
         server_url = "https://diracdev.grid.hep.ph.ic.ac.uk:8444"

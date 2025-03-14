@@ -88,12 +88,11 @@ def get_directory_success_files(result: Any) -> list[str]:
     sucessful_keys = result["Value"]["Successful"].keys()
     if len(sucessful_keys) == 0:
         return []
-    else:
-        all_successful_files = []
-        for key in sucessful_keys:
-            file_keys = list(result["Value"]["Successful"][key]["Files"].keys())
-            all_successful_files.extend(file_keys)
-        return all_successful_files
+    all_successful_files = []
+    for key in sucessful_keys:
+        file_keys = list(result["Value"]["Successful"][key]["Files"].keys())
+        all_successful_files.extend(file_keys)
+    return all_successful_files
 
 
 def get_directory_dump(settings: DiracSettings, lfns: str) -> Any:
