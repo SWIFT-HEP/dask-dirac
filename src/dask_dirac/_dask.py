@@ -131,7 +131,7 @@ class DiracCluster(JobQueueCluster):  # pylint: disable=missing-class-docstring
 class DiracClient(Client):
     """Client for caching dask computations"""
 
-    def __init__(self, *args, cache_location: str = "/tmp/dask-dirac-cache", **kwargs) -> None:  # type: ignore[no-untyped-def]
+    def __init__(self, *args, cache_location: str = "file:///tmp/dask-dirac-cache", **kwargs) -> None:  # type: ignore[no-untyped-def]
         super().__init__(*args, **kwargs)
         self.cache_location = cache_location
 
