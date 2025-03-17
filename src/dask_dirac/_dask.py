@@ -7,6 +7,7 @@ import getpass
 import glob
 import hashlib
 import logging
+import os
 from collections.abc import Callable
 from typing import Any
 
@@ -18,6 +19,7 @@ from dask_jobqueue.core import Job, JobQueueCluster, cluster_parameters, job_par
 from distributed.deploy.spec import ProcessInterface
 from requests import get
 
+from . import _dirac
 from .templates import get_template
 
 logger = logging.getLogger(__name__)
@@ -54,6 +56,8 @@ class DiracJob(Job):
         owner_group: str = "dteam_user",
         dirac_sites: list[str] | str | None = None,
         require_gpu: bool = False,
+        container: str = "docker://sameriksen/dask:centos9",
+        nthreads: int | None = None,
         **base_class_kwargs: dict[str, Any],
     ) -> None:
         super().__init__(
@@ -61,10 +65,11 @@ class DiracJob(Job):
         )
         # public_address = get("https://ifconfig.me", timeout=30).content.decode("utf8")
         public_address = get("https://v4.ident.me/", timeout=30).content.decode("utf8")
-        container = "docker://sameriksen/dask:centos9"
         jdl_template = get_template("jdl.j2")
 
         extra_args = _get_site_ports(dirac_sites) if dirac_sites else ""
+        extra_args += f" --nthreads {nthreads}" if nthreads else ""
+
         if isinstance(dirac_sites, str):
             dirac_sites = [dirac_sites]
 
@@ -125,6 +130,10 @@ class DiracCluster(JobQueueCluster):  # pylint: disable=missing-class-docstring
 
 class DiracClient(Client):
     """Client for caching dask computations"""
+
+    def __init__(self, *args, cache_location: str = "file:///tmp/dask-dirac-cache", **kwargs) -> None:  # type: ignore[no-untyped-def]
+        super().__init__(*args, **kwargs)
+        self.cache_location = cache_location
 
     def _graph_to_futures(
         self,
@@ -196,7 +205,7 @@ class DiracClient(Client):
                 tmp_2[key] = input_func_tuple
             else:
                 func_tuple = check_functions_and_hashes(
-                    input_func_tuple, input_hash_tuple
+                    input_func_tuple, input_hash_tuple, self.cache_location
                 )
                 tmp_2[key] = func_tuple
 
@@ -213,22 +222,23 @@ class DiracClient(Client):
         return super()._graph_to_futures(dsk, *args, **kwargs)
 
 
-def check_functions_and_hashes(func_tuple: Any, hash_tuple: Any) -> Any:
+def check_functions_and_hashes(
+    func_tuple: Any, hash_tuple: Any, cache_location: str
+) -> Any:
     """Check if functions and hashes exist in cache"""
     logging.debug("Checking func_tuple: %s", func_tuple)
     logging.debug("Checking hash_tuple: %s", hash_tuple)
-    # TODO: move into DiracClient
-    cache_location = "/tmp/dask-dirac-cache"
-    cached_files = glob.glob(cache_location + "/*.parquet")
-    cached_files = [c[c.rfind("/") + 1 : -4] for c in cached_files]
+
+    cached_files = get_cached_files(cache_location)
+    logging.debug("Cached files: %s", cached_files)
 
     if len(func_tuple) > 2:
         logging.debug(
             "Need to think about how to do this, but for now just check first hash"
         )
         if hash_tuple[0] in cached_files:
-            return (load_from_parquet, hash_tuple[0])
-        return (save_to_parquet, hash_tuple[0], (func_tuple))
+            return (load_from_parquet, hash_tuple[0], cache_location)
+        return (save_to_parquet, hash_tuple[0], (func_tuple), cache_location)
 
     # Get to the deepest level and replace
     if isinstance(hash_tuple, tuple) and isinstance(func_tuple, tuple):
@@ -236,15 +246,22 @@ def check_functions_and_hashes(func_tuple: Any, hash_tuple: Any) -> Any:
         current_func, nested_func = func_tuple
 
         if current_hash in cached_files:
-            return (load_from_parquet, current_hash)
+            return (load_from_parquet, current_hash, cache_location)
         # Recursively process the nested tuple
-        modified_nested_func = check_functions_and_hashes(nested_func, nested_hash)
-        return (save_to_parquet, current_hash, (current_func, modified_nested_func))
+        modified_nested_func = check_functions_and_hashes(
+            nested_func, nested_hash, cache_location
+        )
+        return (
+            save_to_parquet,
+            current_hash,
+            (current_func, modified_nested_func),
+            cache_location,
+        )
 
     # Base case: No more nested tuples
     if hash_tuple in cached_files:
-        return (load_from_parquet, hash_tuple)
-    return (save_to_parquet, hash_tuple, (func_tuple))
+        return (load_from_parquet, hash_tuple, cache_location)
+    return (save_to_parquet, hash_tuple, (func_tuple), cache_location)
 
 
 def generate_hash_from_value(value: tuple[Callable[..., Any]]) -> tuple[str, Any]:
@@ -316,21 +333,70 @@ def generate_hash_from_value(value: tuple[Callable[..., Any]]) -> tuple[str, Any
     return str(value), str(value)
 
 
-def save_to_parquet(filename: str, data: pd.DataFrame) -> pd.DataFrame:
-    """Save data to Parquet file."""
-    cache_location = "/tmp/dask-dirac-cache"
-    name = cache_location + "/" + filename + ".parquet"
+def save_to_parquet(
+    filename: str, data: pd.DataFrame, cache_location: str
+) -> pd.DataFrame:
+    """Save data to Parquet file.
+    TODO: Make more generic than dataframe.
+    """
 
-    logging.debug("Saving file to %s", name)
+    logging.debug("Writing stage to: %s/%s.parquet", cache_location, filename)
 
-    # TODO: Implement caching logic here
+    # ensure dataframe columns have names
+    if not isinstance(data, pd.DataFrame):
+        data = pd.DataFrame(data)
+    if not all(isinstance(col, str) for col in data.columns):
+        data.columns = [f"col_{i}" for i in range(data.shape[1])]
 
-    return data
+    if cache_location.startswith("file://"):
+        cache_location = cache_location[len("file://") :]
+        # make sure the directory exists
+        os.makedirs(cache_location, exist_ok=True)
+        name = cache_location + "/" + filename + ".parquet"
+        data.to_parquet(name)
+        return data
+
+    # TODO: RUCIO
+    # TODO: DIRAC
+    raise NotImplementedError(f"Caching is not implemented yet for {cache_location}")
 
 
-def load_from_parquet(filename: str) -> pd.DataFrame:
+def load_from_parquet(filename: str, cache_location: str) -> pd.DataFrame:
     """Load data from Parquet file."""
-    # TODO: Move cache location to DiracClient?
-    cache_location = "/tmp/dask-dirac-cache"
-    name = cache_location + "/" + filename + ".parquet"
-    return pd.read_parquet(name)
+    logging.debug("Loading cached file: %s/%s.parquet", cache_location, filename)
+
+    if cache_location.startswith("file://"):
+        cache_location = cache_location[len("file://") :]
+        name = cache_location + "/" + filename + ".parquet"
+        return pd.read_parquet(name)
+
+    # TODO: RUCIO
+    # TODO: DIRAC
+    raise NotImplementedError(f"Caching is not implemented yet for {cache_location}")
+
+
+def get_cached_files(cache_location: str) -> list[str]:
+    """Get cached filed from cache location"""
+
+    if cache_location.startswith("file://"):
+        cache_location = cache_location[len("file://") :]
+        file_list = glob.glob(cache_location + "/*.parquet")
+        # remove parquet extension and get file name from path
+        file_list = [c[c.rfind("/") + 1 : -8] for c in file_list]
+        return file_list
+    if cache_location.startswith("dirac://"):
+        cache_location = cache_location[len("dirac://") :]
+        # Hardcode for now
+        server_url = "https://diracdev.grid.hep.ph.ic.ac.uk:8444"
+        capath = "/cvmfs/grid.cern.ch/etc/grid-security/certificates/"
+        user_proxy = "/tmp/x509up_u397871"
+        settings = _dirac.DiracSettings(server_url, capath, user_proxy)
+        result = _dirac.get_directory_dump(settings, cache_location)
+        file_list = _dirac.get_directory_success_files(result)
+        file_list = [file for file in file_list if file.endswith(".parquet")]
+        file_list = [c[c.rfind("/") + 1 : -8] for c in file_list]
+        return file_list
+
+    # TODO: RUCIO
+    # TODO: DIRAC
+    raise NotImplementedError(f"Caching is not implemented yet for {cache_location}")

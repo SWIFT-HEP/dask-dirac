@@ -13,7 +13,11 @@ from dataclasses import dataclass
 from typing import Any
 
 import _io
-import gfal2  # pylint: disable=import-error
+
+try:
+    import gfal2  # pylint: disable=import-error
+except ImportError:
+    gfal2 = None
 import requests
 
 
@@ -22,7 +26,7 @@ class DiracSettings:
     """Settings for DIRAC queries"""
 
     server_url: str  # TODO: add validator
-    capath: str = "/etc/grid-security/certificates"
+    capath: str = "/cvmfs/grid.cern.ch/etc/grid-security/certificates/"
     user_proxy: str = ""
     query_url: str = ""
 
@@ -78,6 +82,19 @@ def whoami(settings: DiracSettings) -> Any:
     return _query(settings, params)
 
 
+def get_directory_success_files(result: Any) -> list[str]:
+    """Get files that are found in a directory"""
+
+    sucessful_keys = result["Value"]["Successful"].keys()
+    if len(sucessful_keys) == 0:
+        return []
+    all_successful_files = []
+    for key in sucessful_keys:
+        file_keys = list(result["Value"]["Successful"][key]["Files"].keys())
+        all_successful_files.extend(file_keys)
+    return all_successful_files
+
+
 def get_directory_dump(settings: DiracSettings, lfns: str) -> Any:
     """Get directory dump from DIRAC server"""
     endpoint = "DataManagement/FileCatalog"
@@ -107,6 +124,14 @@ def remove_file(settings: DiracSettings, lfns: str) -> Any:
     endpoint = "DataManagement/FileCatalog"
     settings.query_url = f"{settings.server_url}/{endpoint}"
     params = {"method": "removeFile", "args": json.dumps([lfns])}
+    return _query(settings, params)
+
+
+def get_file(settings: DiracSettings, lfns: str) -> Any:
+    """Download a file from DIRAC server"""
+    endpoint = "DataManagement/FileCatalog"
+    settings.query_url = f"{settings.server_url}/{endpoint}"
+    params = {"method": "getFile", "args": json.dumps([lfns])}
     return _query(settings, params)
 
 
@@ -145,7 +170,7 @@ def add_file(
     """Add file to directory on DIRAC server"""
     # example: https://github.com/cern-fts/gfal2-python/blob/develop/example/python/gfal2_copy.py
     # For now put everything under swift-hep at RAL site
-    base_destination = "https://mover.pp.rl.ac.uk:2880/pnfs/pp.rl.ac.uk/data/gridpp/"
+    base_destination = "https://mover.pp.rl.ac.uk:2880/pnfs/pp.rl.ac.uk/data"
 
     # upload the file to server
     destination = f"{base_destination}{remote_file}"
@@ -160,6 +185,9 @@ def add_file(
     context.filecopy(params, source, destination)
 
     # register file
+    # if file is already registered, then this won't work.
+    # Need to remove the file first.
+    # TODO: remove file if --overwrite is being used
     endpoint = "DataManagement/FileCatalog"
     settings.query_url = f"{settings.server_url}/{endpoint}"
 
