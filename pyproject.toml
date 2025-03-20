@@ -37,7 +37,7 @@ classifiers = [
 dynamic = ["version"]
 
 dependencies = [
-    "dask",
+    "dask<=2024.11.2",
     "dask_jobqueue",
     "jinja2",
     "requests",
