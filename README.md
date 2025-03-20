@@ -54,7 +54,7 @@ client = Client(cluster)
                 <a href="https://github.com/seriksen">
                     <img src="https://avatars.githubusercontent.com/u/5619270?v=4" width="100;" alt="seriksen"/>
                     <br />
-                    <sub><b>Null</b></sub>
+                    <sub><b>Sam Eriksen</b></sub>
                 </a>
             </td>
             <td align="center">
